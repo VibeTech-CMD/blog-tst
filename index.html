@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cleilson TST | Segurança do Trabalho Offshore & Onshore</title>
+  <meta name="description" content="Portal profissional de Segurança do Trabalho (TST) por Cleilson. Artigos técnicos com resumo executivo e auto-leitura, vídeos curtos e infográficos sobre NR-37 Offshore, Onshore, NR-35, NR-33 e DDS." />
+  <meta name="author" content="Cleilson — Especialista em Segurança do Trabalho (TST)" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph / Compartilhamento WhatsApp e LinkedIn -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Cleilson TST | Segurança do Trabalho Offshore & Onshore" />
+  <meta property="og:description" content="Guias práticos de NR-37, NR-35, NR-33 e DDS com resumo em 30 segundos e auto-leitura em áudio." />
+  <meta property="og:image" content="assets/images/hero-offshore.jpg" />
+  <meta property="og:locale" content="pt_BR" />
+
+  <!-- Google Fonts: Plus Jakarta Sans (Editorial Forte) + Inter (Leitura Limpa) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles/main.css" />
+
+  <!-- Dados Estruturados Schema.org (SEO & Google AdSense Ready) -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      "name": "Cleilson TST — Segurança do Trabalho Offshore & Onshore",
+      "description": "Conteúdo prático de Segurança do Trabalho (TST), normas regulamentadoras, offshore e onshore.",
+      "inLanguage": "pt-BR",
+      "author": {
+        "@type": "Person",
+        "name": "Cleilson",
+        "jobTitle": "Técnico em Segurança do Trabalho (TST)"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Barra de Progresso de Leitura -->
+  <div id="reading-progress" class="reading-progress" aria-hidden="true"></div>
+
+  <!-- Barra Superior de Autoridade & Destaques -->
+  <div class="top-bar">
+    <div class="container top-bar-inner">
+      <div class="top-bar-ticker">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span><strong>Em alta:</strong> NR-37 Offshore • NR-35 Trabalho em Altura • NR-33 Espaço Confinado • DDS Prático</span>
+      </div>
+      <div class="top-bar-actions">
+        <a href="#anuncie" class="top-link">Anuncie sua Marca</a>
+        <span class="sep">•</span>
+        <button type="button" id="open-editor-top" class="top-link-btn">Área do Editor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header Principal Editorial -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#inicio" id="brand-logo" class="brand" aria-label="Cleilson TST - Página Inicial">
+        <span class="brand-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L4 5.5V11.5C4 16.8 7.4 21.6 12 23C16.6 21.6 20 16.8 20 11.5V5.5L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M9 12.2L11.2 14.4L15.5 9.8" stroke="#F59E0B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <strong>CLEILSON <span class="brand-accent">TST</span></strong>
+          <small>Offshore &amp; Onshore</small>
+        </span>
+      </a>
+
+      <nav class="main-nav" id="main-nav" aria-label="Navegação principal">
+        <a href="#inicio" data-nav-cat="all" class="nav-link active">Início</a>
+        <a href="#feed" data-nav-cat="offshore" class="nav-link">Offshore</a>
+        <a href="#feed" data-nav-cat="onshore" class="nav-link">Onshore</a>
+        <a href="#feed" data-nav-cat="nrs" class="nav-link">NRs</a>
+        <a href="#videos" class="nav-link">Vídeos Curtos</a>
+        <a href="#infograficos" class="nav-link">Infográficos</a>
+        <a href="#sobre" class="nav-link">Cleilson</a>
+      </nav>
+
+      <div class="header-tools">
+        <div class="search-box">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+            <path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input type="search" id="search-input" placeholder="Buscar NR-37, LOTO, DDS..." aria-label="Buscar publicações" />
+        </div>
+
+        <button type="button" id="theme-toggle" class="icon-btn" title="Alternar modo claro/escuro" aria-label="Alternar tema">
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 2V4M12 20V22M4.93 4.93L6.34 6.34M17.66 17.66L19.07 19.07M2 12H4M20 12H22M4.93 19.07L6.34 17.66M17.66 6.34L19.07 4.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <a href="#newsletter-section" class="btn btn-primary btn-sm hide-mobile">Kit DDS Grátis</a>
+
+        <button type="button" id="mobile-menu-btn" class="icon-btn mobile-only" aria-label="Abrir menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Slot de Propaganda Topo (Leaderboard 728x90 / Responsivo — Google AdSense ou Patrocinador Direto) -->
+  <div class="ad-leaderboard-wrapper">
+    <div class="container">
+      <aside class="ad-slot ad-leaderboard" aria-label="Espaço publicitário superior">
+        <div class="ad-badge">PUBLICIDADE • ESPAÇO LEADERBOARD (728x90 / ADSENSE)</div>
+        <div class="ad-slot-content">
+          <div class="ad-promo-text">
+            <strong>Sua marca de EPIs, Cursos NR ou Consultoria SST vista por milhares de profissionais Offshore &amp; Onshore.</strong>
+            <span>Espaço otimizado para Google AdSense ou Patrocínio Direto de alta conversão.</span>
+          </div>
+          <a href="#anuncie" class="btn btn-outline-amber btn-sm">Anunciar Aqui</a>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       VISÃO 1: PORTAL PRINCIPAL (HOME)
+       ========================================================= -->
+  <main id="home-view">
+    <!-- Hero Editorial em Destaque -->
+    <section id="inicio" class="hero-section">
+      <div class="container">
+        <div id="hero-featured" class="hero-card">
+          <!-- Renderizado dinamicamente via app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Faixa Patrocinador Oficial (Modelo Morning Brew — Alta Rentabilidade) -->
+    <section class="sponsor-strip-section">
+      <div class="container">
+        <div class="sponsor-strip">
+          <div class="sponsor-meta">
+            <span class="sponsor-tag">OFERECIMENTO</span>
+            <strong id="sponsor-name">PrevGuard EPIs Offshore</strong>
+          </div>
+          <p id="sponsor-headline" class="sponsor-text"></p>
+          <a href="#anuncie" id="sponsor-cta" class="btn btn-dark btn-sm">Ver Condições</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Corpo Principal: Feed Multi-Formato + Sidebar de Monetização e Conversão -->
+    <section id="feed" class="portal-layout-section">
+      <div class="container portal-grid">
+        <!-- Coluna Principal -->
+        <div class="portal-main">
+          <div class="section-header-bar">
+            <div>
+              <span class="eyebrow">PUBLICAÇÕES &amp; GUIAS DE CAMPO</span>
+              <h2>Conteúdo Técnico Direto ao Ponto</h2>
+            </div>
+            <div class="format-pills" role="tablist" aria-label="Filtrar por formato">
+              <button type="button" class="format-pill active" data-format="all">Todos</button>
+              <button type="button" class="format-pill" data-format="article">Textos</button>
+              <button type="button" class="format-pill" data-format="video">Vídeos Curtos</button>
+              <button type="button" class="format-pill" data-format="image">Infográficos</button>
+            </div>
+          </div>
+
+          <!-- Filtros de Categoria -->
+          <div class="category-tabs" role="tablist" aria-label="Filtrar por área">
+            <button type="button" class="cat-tab active" data-category="all">Todas as Áreas</button>
+            <button type="button" class="cat-tab" data-category="offshore">Offshore (NR-37)</button>
+            <button type="button" class="cat-tab" data-category="onshore">Onshore &amp; Indústria</button>
+            <button type="button" class="cat-tab" data-category="nrs">NRs &amp; Legislação</button>
+            <button type="button" class="cat-tab" data-category="dds">DDS &amp; Cultura</button>
+          </div>
+
+          <!-- Status de busca / resultados -->
+          <div id="feed-status" class="feed-status" hidden></div>
+
+          <!-- Grid de Publicações (com Anúncio In-Feed Nativo inserido automaticamente) -->
+          <div id="posts-grid" class="posts-grid">
+            <!-- Renderizado via app.js -->
+          </div>
+        </div>
+
+        <!-- Sidebar Sticky: Autoridade, Newsletter, AdSense 300x250 e Mais Lidos -->
+        <aside class="portal-sidebar" aria-label="Barra lateral">
+          <!-- Card Autoridade Cleilson -->
+          <div class="sidebar-card author-mini-card">
+            <div class="author-mini-header">
+              <img src="assets/images/author-cleilson.jpg" alt="Cleilson - Especialista em Segurança do Trabalho" class="author-avatar" />
+              <div>
+                <span class="verified-badge">Autor Verificado</span>
+                <h3>Cleilson</h3>
+                <p>TST • Offshore &amp; Onshore</p>
+              </div>
+            </div>
+            <p class="author-mini-bio">
+              Traduzindo NRs complexas em rotinas práticas que salvam vidas em plataformas marítimas e plantas industriais.
+            </p>
+            <div class="author-mini-actions">
+              <a href="#sobre" class="btn btn-dark btn-full btn-sm">Conhecer Cleilson</a>
+            </div>
+          </div>
+
+          <!-- Card Newsletter / Captura de Leads -->
+          <div id="newsletter-section" class="sidebar-card newsletter-card">
+            <span class="pill-amber">GRÁTIS NO E-MAIL</span>
+            <h3>Kit 10 Checklists de DDS (Offshore &amp; Onshore)</h3>
+            <p>Receba toda segunda-feira 1 resumo técnico de NR + materiais prontos para aplicar no turno.</p>
+            <form id="sidebar-newsletter-form" class="newsletter-form">
+              <input type="text" name="name" placeholder="Seu primeiro nome" required />
+              <input type="email" name="email" placeholder="Seu melhor e-mail" required />
+              <button type="submit" class="btn btn-primary btn-full">Baixar Kit + Assinar</button>
+            </form>
+            <small class="form-note">Zero spam. +12.400 profissionais de SST inscritos.</small>
+          </div>
+
+          <!-- Slot de Propaganda Sidebar (300x250 / Retângulo Médio AdSense) -->
+          <div class="ad-slot ad-rectangle" aria-label="Anúncio lateral">
+            <div class="ad-badge">PUBLICIDADE • 300x250 ADSENSE</div>
+            <div class="ad-rect-body">
+              <span class="ad-rect-tag">PARCEIRO SST</span>
+              <h4>Cursos NR-37, NR-35 e NR-33 com Certificado Válido</h4>
+              <p>Espaço ideal para afiliados de cursos técnicos, softwares de PGR/eSocial ou Google AdSense Display.</p>
+              <a href="#anuncie" class="btn btn-outline-dark btn-sm btn-full">Reservar Espaço</a>
+            </div>
+          </div>
+
+          <!-- Mais Lidos da Semana -->
+          <div class="sidebar-card trending-card">
+            <h3 class="sidebar-title">Mais Lidos da Semana</h3>
+            <ol id="trending-list" class="trending-list">
+              <!-- Renderizado via app.js -->
+            </ol>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Seção Dedicada: Vídeos Curtos & Pílulas de Segurança (Shorts / Reels) -->
+    <section id="videos" class="shorts-section">
+      <div class="container">
+        <div class="section-header-bar">
+          <div>
+            <span class="eyebrow">VÍDEOS CURTOS &amp; ROTEIROS RÁPIDOS</span>
+            <h2>Pílulas de Segurança em Menos de 1 Minuto</h2>
+          </div>
+          <p class="section-sub">Ideal para assistir rápido ou ouvir no modo áudio antes de entrar no turno.</p>
+        </div>
+        <div id="shorts-grid" class="shorts-grid">
+          <!-- Renderizado via app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção Dedicada: Infográficos & Guias Visuais -->
+    <section id="infograficos" class="infographics-section">
+      <div class="container">
+        <div class="section-header-bar">
+          <div>
+            <span class="eyebrow">PUBLICAÇÕES EM IMAGEM</span>
+            <h2>Infográficos &amp; Cartazes Prontos para DDS</h2>
+          </div>
+          <p class="section-sub">Conteúdo visual fácil de salvar e compartilhar no WhatsApp da equipe.</p>
+        </div>
+        <div id="infographics-grid" class="infographics-grid">
+          <!-- Renderizado via app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção de Autoridade Completa: Cleilson -->
+    <section id="sobre" class="about-author-section">
+      <div class="container about-grid">
+        <div class="about-photo-col">
+          <div class="about-photo-frame">
+            <img src="assets/images/author-cleilson.jpg" alt="Cleilson — Criador do Portal Cleilson TST" />
+            <div class="about-badge-float">
+              <strong>Cleilson TST</strong>
+              <span>Especialista Offshore &amp; Onshore</span>
+            </div>
+          </div>
+        </div>
+        <div class="about-content-col">
+          <span class="eyebrow">QUEM ASSINA ESTE PORTAL</span>
+          <h2>Construindo Cultura de Segurança Real — Do Convés Offshore ao Chão de Fábrica</h2>
+          <p id="about-bio-text" class="about-lead"></p>
+          <div id="about-stats" class="about-stats-grid">
+            <!-- Renderizado via app.js -->
+          </div>
+          <div class="about-cta-row">
+            <a href="#anuncie" class="btn btn-primary">Contratar Palestra / Consultoria</a>
+            <button type="button" id="open-editor-about" class="btn btn-outline-light">Publicar Novo Conteúdo</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção Comercial / Rentabilidade: Mídia Kit & Anuncie Aqui -->
+    <section id="anuncie" class="monetize-section">
+      <div class="container">
+        <div class="monetize-box">
+          <div class="monetize-info">
+            <span class="eyebrow">MONETIZAÇÃO &amp; PARCERIAS COMERCIAIS</span>
+            <h2>Anuncie Sua Marca Para Quem Decide Compras de SST</h2>
+            <p>
+              Nosso público é formado por Técnicos e Engenheiros de Segurança do Trabalho, Gestores de SMS, Compradores Industriais e Profissionais Offshore. Estruturado para alta conversão em <strong>Google AdSense</strong>, <strong>Patrocínio Direto</strong> e <strong>Publieditoriais</strong>.
+            </p>
+            <ul class="monetize-benefits">
+              <li>Banner Leaderboard (Topo) e In-Article (Meio da Leitura) de alto CTR</li>
+              <li>Cota "Oferecimento Oficial" fixa na capa e na newsletter semanal</li>
+              <li>Publiposts técnicos + Vídeos Curtos com a autoridade do Cleilson</li>
+            </ul>
+          </div>
+          <form id="advertiser-form" class="monetize-form">
+            <h3>Solicitar Mídia Kit &amp; Tabela</h3>
+            <input type="text" name="company" placeholder="Nome da Empresa / Marca" required />
+            <input type="email" name="email" placeholder="E-mail corporativo" required />
+            <select name="format" required>
+              <option value="">Formato de interesse...</option>
+              <option value="Patrocínio Oficial">Patrocínio Oficial (Topo + Newsletter)</option>
+              <option value="Banner Display">Banner Display / In-Article</option>
+              <option value="Publieditorial + Vídeo">Publieditorial Técnico + Vídeo Curto</option>
+              <option value="Palestra / Consultoria">Palestra SIPAT / Consultoria Cleilson</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-full">Receber Proposta Comercial</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =========================================================
+       VISÃO 2: LEITOR DE ARTIGO (COM AUTO-LEITURA + RESUMO 30s)
+       ========================================================= -->
+  <main id="article-view" class="article-view" hidden>
+    <div class="container article-layout">
+      <article class="article-main">
+        <div class="article-topbar">
+          <button type="button" id="back-to-home" class="back-btn">
+            ← Voltar para o Portal
+          </button>
+          <span id="art-category-badge" class="badge-cat"></span>
+        </div>
+
+        <h1 id="art-title" class="article-title"></h1>
+        <p id="art-subtitle" class="article-subtitle"></p>
+
+        <div class="article-meta-bar">
+          <div class="art-author-inline">
+            <img src="assets/images/author-cleilson.jpg" alt="Cleilson" />
+            <div>
+              <strong>Por Cleilson</strong>
+              <span id="art-meta-details"></span>
+            </div>
+          </div>
+          <div class="share-actions">
+            <button type="button" id="share-whatsapp" class="share-btn share-wa" title="Compartilhar no WhatsApp">WhatsApp</button>
+            <button type="button" id="share-linkedin" class="share-btn share-li" title="Compartilhar no LinkedIn">LinkedIn</button>
+            <button type="button" id="share-copy" class="share-btn" title="Copiar link">Copiar Link</button>
+          </div>
+        </div>
+
+        <!-- PLAYER DE AUTO-LEITURA (TEXT-TO-SPEECH PT-BR) -->
+        <section class="tts-player" id="tts-player" aria-label="Player de auto-leitura do artigo">
+          <div class="tts-header">
+            <div class="tts-title-group">
+              <span class="tts-icon-badge" id="tts-wave-badge" aria-hidden="true">🔊</span>
+              <div>
+                <strong>Auto-Leitura Inteligente (Ouça este conteúdo)</strong>
+                <small id="tts-status-text">Prefere ouvir? Aperte o play para escutar o resumo ou o artigo completo.</small>
+              </div>
+            </div>
+            <div class="tts-mode-buttons">
+              <button type="button" id="tts-play-summary" class="btn btn-outline-amber btn-sm">▶ Ouvir Só o Resumo</button>
+              <button type="button" id="tts-play-full" class="btn btn-primary btn-sm">▶ Ouvir Artigo Completo</button>
+            </div>
+          </div>
+
+          <div class="tts-controls-bar" id="tts-controls-bar">
+            <div class="tts-playback-btns">
+              <button type="button" id="tts-toggle-pause" class="tts-ctrl-btn" disabled>Pausar</button>
+              <button type="button" id="tts-stop" class="tts-ctrl-btn" disabled>Parar</button>
+            </div>
+
+            <div class="tts-progress-wrap">
+              <div class="tts-progress-track">
+                <div id="tts-progress-fill" class="tts-progress-fill"></div>
+              </div>
+              <span id="tts-progress-label" class="tts-progress-label">Pronto</span>
+            </div>
+
+            <div class="tts-settings">
+              <label for="tts-rate" class="sr-only">Velocidade</label>
+              <select id="tts-rate" class="tts-select" title="Velocidade da leitura">
+                <option value="0.85">0.85x</option>
+                <option value="1" selected>1.0x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="1.8">1.8x</option>
+              </select>
+              <label for="tts-voice" class="sr-only">Voz</label>
+              <select id="tts-voice" class="tts-select tts-voice-select" title="Selecionar voz em português">
+                <option value="">Voz PT-BR padrão</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- CAIXA DE RESUMO EXECUTIVO (TL;DR — LEITURA EM 30 SEGUNDOS) -->
+        <section class="summary-box" id="article-summary-box" aria-label="Resumo executivo do texto">
+          <div class="summary-box-header">
+            <div class="summary-title">
+              <span class="summary-pill">RESUMO EM 30 SEGUNDOS</span>
+              <h2>O Que Você Precisa Saber Sem Ler o Texto Inteiro</h2>
+            </div>
+          </div>
+          <ul id="art-summary-list" class="summary-list">
+            <!-- Renderizado via app.js -->
+          </ul>
+          <div id="art-practical-tip" class="practical-tip-box">
+            <!-- Renderizado via app.js -->
+          </div>
+        </section>
+
+        <!-- Mídia Principal do Artigo -->
+        <figure class="article-hero-figure">
+          <img id="art-image" src="" alt="" />
+          <figcaption id="art-image-caption"></figcaption>
+        </figure>
+
+        <!-- Corpo Completo do Artigo (com Anúncio In-Article no meio) -->
+        <div id="art-body" class="article-body">
+          <!-- Renderizado via app.js -->
+        </div>
+
+        <!-- Box de Autor no Final do Artigo -->
+        <div class="article-author-box">
+          <img src="assets/images/author-cleilson.jpg" alt="Cleilson TST" />
+          <div>
+            <span class="eyebrow">SOBRE O AUTOR</span>
+            <h3>Cleilson — Especialista em Segurança do Trabalho (TST)</h3>
+            <p>Atuação em segurança operacional Offshore e Onshore. Ajuda profissionais e empresas a aplicarem NRs com clareza, zero enrolação e foco em vidas preservadas.</p>
+          </div>
+        </div>
+
+        <!-- Conteúdos Relacionados -->
+        <section class="related-section">
+          <h3>Continue Lendo (Relacionados)</h3>
+          <div id="related-grid" class="related-grid"></div>
+        </section>
+      </article>
+
+      <!-- Sidebar do Leitor -->
+      <aside class="article-sidebar">
+        <div class="sidebar-card newsletter-card">
+          <span class="pill-amber">CHECKLIST GRÁTIS</span>
+          <h3>Baixe o Kit DDS Offshore &amp; Onshore</h3>
+          <p>Receba novos resumos técnicos do Cleilson direto no seu e-mail.</p>
+          <form id="article-newsletter-form" class="newsletter-form">
+            <input type="email" name="email" placeholder="Seu melhor e-mail" required />
+            <button type="submit" class="btn btn-primary btn-full">Quero Receber</button>
+          </form>
+        </div>
+
+        <div class="ad-slot ad-rectangle">
+          <div class="ad-badge">PUBLICIDADE • STICKY ADSENSE</div>
+          <div class="ad-rect-body">
+            <span class="ad-rect-tag">OFERTA SST</span>
+            <h4>Equipamentos de Detecção de Gases &amp; NR-35</h4>
+            <p>Anúncio fixo lateral de altíssima visibilidade durante a leitura completa do artigo.</p>
+            <a href="#anuncie" class="btn btn-outline-dark btn-sm btn-full">Anunciar Aqui</a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- =========================================================
+       RODAPÉ EDITORIAL + LINKS OBRIGATÓRIOS ADSENSE
+       ========================================================= -->
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <strong>CLEILSON <span class="brand-accent">TST</span></strong>
+        <p>Portal independente de Segurança do Trabalho (Offshore &amp; Onshore). Conteúdo técnico, prático e acessível em texto, imagem, vídeo curto e áudio.</p>
+      </div>
+      <div>
+        <h4>Categorias</h4>
+        <ul>
+          <li><a href="#feed" data-nav-cat="offshore">Offshore (NR-37)</a></li>
+          <li><a href="#feed" data-nav-cat="onshore">Onshore &amp; Indústria</a></li>
+          <li><a href="#feed" data-nav-cat="nrs">NRs &amp; Legislação</a></li>
+          <li><a href="#videos">Vídeos Curtos</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Institucional &amp; Rentabilidade</h4>
+        <ul>
+          <li><a href="#sobre">Sobre Cleilson</a></li>
+          <li><a href="#anuncie">Mídia Kit / Anuncie Aqui</a></li>
+          <li><button type="button" id="open-privacy-btn" class="footer-link-btn">Política de Privacidade</button></li>
+          <li><button type="button" id="open-editor-footer" class="footer-link-btn">Área do Editor (Publicar)</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <span>© 2026 Cleilson TST — Todos os direitos reservados.</span>
+      <span>Conteúdo informativo de Segurança do Trabalho (SST).</span>
+    </div>
+  </footer>
+
+  <!-- =========================================================
+       MODAL: ÁREA DO EDITOR (CRIAR & PUBLICAR NOVOS POSTS)
+       ========================================================= -->
+  <div id="editor-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="editor-modal-title">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">ESTÚDIO DO CLEILSON</span>
+          <h3 id="editor-modal-title">Publicar Novo Conteúdo</h3>
+        </div>
+        <button type="button" class="modal-close" data-close-modal="editor-modal" aria-label="Fechar">✕</button>
+      </div>
+      <form id="editor-form" class="editor-form">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="ed-type">Formato da Publicação</label>
+            <select id="ed-type" name="type" required>
+              <option value="article">Artigo Completo (Texto + Áudio)</option>
+              <option value="video">Vídeo Curto (Pílula / Shorts)</option>
+              <option value="image">Imagem / Infográfico DDS</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ed-category">Área / Categoria</label>
+            <select id="ed-category" name="category" required>
+              <option value="offshore">Offshore (NR-37)</option>
+              <option value="onshore">Onshore &amp; Indústria</option>
+              <option value="nrs">NRs &amp; Legislação</option>
+              <option value="dds">DDS &amp; Cultura</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ed-title">Título Chamativo (SEO &amp; Alta Conversão)</label>
+          <input type="text" id="ed-title" name="title" placeholder="Ex: 5 Cuidados Essenciais na Movimentação de Cargas Offshore" required />
+        </div>
+
+        <div class="form-group">
+          <label for="ed-subtitle">Subtítulo / Chamada Curta</label>
+          <input type="text" id="ed-subtitle" name="subtitle" placeholder="Resumo em 1 frase que desperta curiosidade..." required />
+        </div>
+
+        <div class="form-group">
+          <label for="ed-summary">Pontos do Resumo em 30s (um tópico por linha)</label>
+          <textarea id="ed-summary" name="summary" rows="3" placeholder="Ponto chave 1&#10;Ponto chave 2&#10;Ponto chave 3" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="ed-tip">Aplicação Prática no Campo (Dica do Cleilson)</label>
+          <input type="text" id="ed-tip" name="practicalTip" placeholder="Uma ação imediata para o leitor aplicar no próximo turno..." required />
+        </div>
+
+        <div class="form-group">
+          <label for="ed-body">Texto Completo ou Roteiro do Vídeo (separe parágrafos com linha em branco)</label>
+          <textarea id="ed-body" name="body" rows="6" placeholder="Escreva o conteúdo completo aqui. Ele também será lido automaticamente pela Auto-Leitura..." required></textarea>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="ed-image">Imagem de Capa</label>
+            <select id="ed-image" name="image">
+              <option value="assets/images/hero-offshore.jpg">Plataforma Offshore (NR-37)</option>
+              <option value="assets/images/onshore-industry.jpg">Planta Industrial Onshore</option>
+              <option value="assets/images/nr35-height.jpg">Trabalho em Altura (NR-35)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ed-readtime">Tempo de Leitura / Duração</label>
+            <input type="text" id="ed-readtime" name="readTime" value="4 min de leitura" required />
+          </div>
+        </div>
+
+        <div class="editor-actions">
+          <button type="button" id="export-json-btn" class="btn btn-outline-dark">Exportar JSON dos Posts</button>
+          <button type="submit" class="btn btn-primary">Publicar Agora no Portal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: POLÍTICA DE PRIVACIDADE (REQUISITO GOOGLE ADSENSE) -->
+  <div id="privacy-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="privacy-modal-title">Política de Privacidade &amp; Cookies</h3>
+        <button type="button" class="modal-close" data-close-modal="privacy-modal" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body-text">
+        <p>O portal <strong>Cleilson TST</strong> respeita a sua privacidade em conformidade com a LGPD (Lei nº 13.709/2018).</p>
+        <p><strong>Publicidade e Google AdSense:</strong> Este site utiliza espaços publicitários que podem empregar cookies de terceiros (como o Google AdSense) para exibir anúncios relevantes conforme sua navegação. Você pode gerenciar ou desativar anúncios personalizados nas Configurações de Anúncios do Google.</p>
+        <p><strong>Newsletter e Contato:</strong> Os e-mails cadastrados para recebimento de materiais de DDS e novidades técnicas nunca são vendidos a terceiros e permitem descadastro a qualquer momento.</p>
+        <p><strong>Responsabilidade Técnica:</strong> Os artigos, resumos e áudios têm caráter educacional e informativo. Sempre consulte as Normas Regulamentadoras vigentes e o SESMT da sua unidade antes de executar atividades críticas.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de Feedback -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="scripts/app.js"></script>
+</body>
+</html>

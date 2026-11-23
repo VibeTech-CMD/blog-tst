@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cleilson-tst-blog.github.io/sitemap.xml
