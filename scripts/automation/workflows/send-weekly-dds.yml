@@ -1,0 +1,26 @@
+name: Enviar Kits de DDS Validados (Segunda-feira 06h)
+
+on:
+  schedule:
+    # Toda segunda-feira às 06h00 (Brasília = 09h00 UTC)
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+jobs:
+  send-dds:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Disparar e-mail semanal para inscritos (somente DDS validados)
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM: ${{ secrets.RESEND_FROM }}
+          DDS_SUBSCRIBERS: ${{ secrets.DDS_SUBSCRIBERS }}
+        run: python scripts/automation/send_weekly_dds.py

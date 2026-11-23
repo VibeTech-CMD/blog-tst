@@ -1,11 +1,25 @@
 import { SITE_CONFIG, DEFAULT_POSTS } from "./data.js";
 import { AutoReader } from "./tts.js";
+import {
+  loadDdsKits,
+  saveDdsKits,
+  loadAiConfig,
+  saveAiConfig,
+  generateAiDdsDraft,
+  formatDdsForWhatsApp,
+  printDdsCard,
+  addSubscriber,
+  getSubscriberCount
+} from "./dds-hub.js";
 
 const STORAGE_KEY_POSTS = "cleilson_tst_custom_posts_v1";
 const STORAGE_KEY_THEME = "cleilson_tst_theme_v1";
 
 const state = {
   posts: [],
+  ddsKits: [],
+  ddsArea: "all",
+  activeDdsModal: null,
   category: "all",
   format: "all",
   search: "",
@@ -32,6 +46,23 @@ const els = {
   mobileMenuBtn: document.getElementById("mobile-menu-btn"),
   mainNav: document.getElementById("main-nav"),
 
+  // Central de Kits de DDS
+  ddsKitsGrid: document.getElementById("dds-kits-grid"),
+  pendingDdsBadge: document.getElementById("pending-dds-badge"),
+  studioPendingCount: document.getElementById("studio-pending-count"),
+  ddsSubCounter: document.getElementById("dds-sub-counter"),
+  pendingDdsList: document.getElementById("pending-dds-list"),
+  aiTopicInput: document.getElementById("ai-topic-input"),
+  generateAiDdsBtn: document.getElementById("generate-ai-dds-btn"),
+  exportDdsJsonBtn: document.getElementById("export-dds-json-btn"),
+  ddsReaderModal: document.getElementById("dds-reader-modal"),
+  ddsModalBadge: document.getElementById("dds-modal-badge"),
+  ddsModalTitle: document.getElementById("dds-modal-title"),
+  ddsModalContent: document.getElementById("dds-modal-content"),
+  ddsModalListen: document.getElementById("dds-modal-listen"),
+  ddsModalWhatsapp: document.getElementById("dds-modal-whatsapp"),
+  ddsModalPrint: document.getElementById("dds-modal-print"),
+
   // Article view
   backToHome: document.getElementById("back-to-home"),
   artCategoryBadge: document.getElementById("art-category-badge"),
@@ -50,6 +81,7 @@ const els = {
 
   // TTS Player
   ttsWaveBadge: document.getElementById("tts-wave-badge"),
+  ttsEnginePill: document.getElementById("tts-engine-pill"),
   ttsStatusText: document.getElementById("tts-status-text"),
   ttsPlaySummary: document.getElementById("tts-play-summary"),
   ttsPlayFull: document.getElementById("tts-play-full"),
@@ -64,32 +96,44 @@ const els = {
   editorModal: document.getElementById("editor-modal"),
   privacyModal: document.getElementById("privacy-modal"),
   editorForm: document.getElementById("editor-form"),
+  voiceAiConfigForm: document.getElementById("voice-ai-config-form"),
   exportJsonBtn: document.getElementById("export-json-btn"),
   toast: document.getElementById("toast")
 };
 
 // =========================================================================
-// MOTOR DE AUTO-LEITURA (TTS)
+// MOTOR DE AUTO-LEITURA HUMANIZADA (TTS)
 // =========================================================================
 let highlightedEl = null;
 
 const reader = new AutoReader({
-  onVoicesLoaded: (voices, selectedURI) => {
+  onVoicesLoaded: (voices, selectedURI, isHighQuality) => {
     if (!els.ttsVoice) return;
     if (voices.length === 0) {
       els.ttsVoice.innerHTML = `<option value="">Voz PT-BR padrão</option>`;
       return;
     }
     els.ttsVoice.innerHTML = voices
-      .map((v) => `<option value="${escapeHtml(v.voiceURI)}" ${v.voiceURI === selectedURI ? "selected" : ""}>${escapeHtml(v.name)} (${v.lang})</option>`)
+      .map((v) => {
+        const tag = /natural|neural|online|google/i.test(v.name) ? "★ " : "";
+        return `<option value="${escapeHtml(v.voiceURI)}" ${v.voiceURI === selectedURI ? "selected" : ""}>${tag}${escapeHtml(v.name)}</option>`;
+      })
       .join("");
+
+    if (!reader.getNeuralConfig().apiKey && els.ttsEnginePill) {
+      els.ttsEnginePill.textContent = isHighQuality ? "★ Voz Natural HD" : "Prosódia SST • Dica: Voz HD";
+    }
   },
-  onStateChange: ({ supported, isPlaying, isPaused, mode }) => {
+  onStateChange: ({ supported, isPlaying, isPaused, mode, engine, hasNeuralConfigured }) => {
     if (!supported) {
-      els.ttsStatusText.textContent = "Seu navegador não suporta síntese de voz nativa.";
-      els.ttsPlaySummary.disabled = true;
-      els.ttsPlayFull.disabled = true;
+      els.ttsStatusText.textContent = "Seu navegador não suporta áudio nativo. Configure Voz Neural HD em ⚙ Voz HD.";
       return;
+    }
+
+    if (els.ttsEnginePill) {
+      if (hasNeuralConfigured || engine === "openai" || engine === "elevenlabs") {
+        els.ttsEnginePill.textContent = "✨ Voz Neural HD (IA)";
+      }
     }
 
     els.ttsTogglePause.disabled = !isPlaying;
@@ -100,14 +144,16 @@ const reader = new AutoReader({
       els.ttsWaveBadge.classList.add("playing");
       els.ttsStatusText.textContent =
         mode === "summary"
-          ? "Lendo o Resumo Executivo em voz alta..."
-          : "Lendo o conteúdo completo em voz alta...";
+          ? "Narrando o Resumo Executivo com ritmo fluido..."
+          : mode === "dds"
+          ? "Narrando Kit de DDS em voz humanizada..."
+          : "Narrando o conteúdo completo com pausas naturais...";
     } else if (isPlaying && isPaused) {
       els.ttsWaveBadge.classList.remove("playing");
       els.ttsStatusText.textContent = "Auto-leitura pausada.";
     } else {
       els.ttsWaveBadge.classList.remove("playing");
-      els.ttsStatusText.textContent = "Prefere ouvir? Aperte o play para escutar o resumo ou o artigo completo.";
+      els.ttsStatusText.textContent = "Com pronúncia técnica de SST e pausas naturais. Aperte o play para ouvir!";
       els.ttsProgressFill.style.width = "0%";
       els.ttsProgressLabel.textContent = "Pronto";
     }
@@ -118,9 +164,9 @@ const reader = new AutoReader({
       els.ttsProgressLabel.textContent = "Pronto";
       return;
     }
-    const pct = Math.round((current / total) * 100);
+    const pct = Math.min(100, Math.round((current / total) * 100));
     els.ttsProgressFill.style.width = `${pct}%`;
-    els.ttsProgressLabel.textContent = `${pct}% (${current}/${total})`;
+    els.ttsProgressLabel.textContent = `${pct}%`;
   },
   onHighlight: (elementId) => {
     if (highlightedEl) {
@@ -157,7 +203,7 @@ function showToast(message) {
   clearTimeout(showToast._timer);
   showToast._timer = setTimeout(() => {
     els.toast.hidden = true;
-  }, 3400);
+  }, 3800);
 }
 
 function formatTypeBadge(type) {
@@ -191,7 +237,7 @@ function saveCustomPost(newPost) {
 }
 
 // =========================================================================
-// RENDERIZAÇÃO DA HOME
+// RENDERIZAÇÃO DA HOME & CENTRAL DE KITS DE DDS
 // =========================================================================
 function renderStaticBranding() {
   els.sponsorName.textContent = SITE_CONFIG.sponsor.name;
@@ -207,6 +253,9 @@ function renderStaticBranding() {
       </div>`
     )
     .join("");
+  if (els.ddsSubCounter) {
+    els.ddsSubCounter.textContent = getSubscriberCount().toLocaleString("pt-BR");
+  }
 }
 
 function renderHero() {
@@ -294,7 +343,6 @@ function renderFeed() {
       </article>
     `);
 
-    // Insere Anúncio In-Feed Nativo de alta conversão após o 2º card
     if (idx === 1) {
       cardsHtml.push(`
         <aside class="ad-infeed" aria-label="Publicidade no feed">
@@ -310,6 +358,130 @@ function renderFeed() {
   });
 
   els.postsGrid.innerHTML = cardsHtml.join("");
+}
+
+function renderDdsHub() {
+  const approved = state.ddsKits.filter((k) => k.status === "approved");
+  const pending = state.ddsKits.filter((k) => k.status === "pending_validation");
+
+  if (els.pendingDdsBadge) els.pendingDdsBadge.textContent = pending.length;
+  if (els.studioPendingCount) els.studioPendingCount.textContent = pending.length;
+
+  const visible = approved.filter((k) => state.ddsArea === "all" || k.area === state.ddsArea);
+
+  els.ddsKitsGrid.innerHTML = visible
+    .map(
+      (dds) => `
+      <article class="dds-kit-card">
+        <div class="dds-kit-top">
+          <span class="badge-cat">${escapeHtml(dds.areaLabel)}</span>
+          <span class="dds-verified-pill">✓ Validado por ${escapeHtml(dds.validatedBy || "Cleilson TST")}</span>
+        </div>
+        <h3>${escapeHtml(dds.title)}</h3>
+        <p class="dds-kit-summary">${escapeHtml(dds.summary)}</p>
+        <div class="dds-kit-meta">
+          <span>📋 Norma: <strong>${escapeHtml(dds.norm)}</strong></span>
+          <span>⏱ ${escapeHtml(dds.duration)}</span>
+        </div>
+        <div class="dds-kit-actions">
+          <button type="button" class="btn btn-primary btn-sm" data-open-dds="${escapeHtml(dds.id)}">Abrir Roteiro + Checklist</button>
+          <button type="button" class="btn btn-dark btn-sm" data-listen-dds="${escapeHtml(dds.id)}">🔊 Ouvir</button>
+          <button type="button" class="card-listen-btn" data-wa-dds="${escapeHtml(dds.id)}" title="Copiar para WhatsApp">WhatsApp</button>
+          <button type="button" class="card-listen-btn" data-pdf-dds="${escapeHtml(dds.id)}" title="Imprimir ou Salvar PDF">PDF</button>
+        </div>
+      </article>`
+    )
+    .join("");
+}
+
+function renderPendingDdsQueue() {
+  const pending = state.ddsKits.filter((k) => k.status === "pending_validation");
+  if (els.pendingDdsBadge) els.pendingDdsBadge.textContent = pending.length;
+  if (els.studioPendingCount) els.studioPendingCount.textContent = pending.length;
+
+  if (pending.length === 0) {
+    els.pendingDdsList.innerHTML = `
+      <div class="pending-empty">
+        <strong>Tudo validado! 🎉</strong>
+        <p>Nenhum DDS aguardando revisão. Clique em <strong>"Pesquisar &amp; Gerar DDS com IA"</strong> acima para criar novos rascunhos para a próxima segunda-feira.</p>
+      </div>`;
+    return;
+  }
+
+  els.pendingDdsList.innerHTML = pending
+    .map(
+      (dds) => `
+      <div class="pending-dds-card" data-pending-id="${escapeHtml(dds.id)}">
+        <div class="pending-card-head">
+          <span class="pill-pending">AGUARDANDO VALIDAÇÃO DO CLEILSON</span>
+          <span class="pending-source">${escapeHtml(dds.trendSource)}</span>
+        </div>
+        <div class="form-row-2" style="margin-top:10px">
+          <div class="form-group">
+            <label>Título do DDS (editável)</label>
+            <input type="text" class="pend-title" value="${escapeHtml(dds.title)}" />
+          </div>
+          <div class="form-group">
+            <label>Norma / Referência</label>
+            <input type="text" class="pend-norm" value="${escapeHtml(dds.norm)}" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:8px">
+          <label>Resumo Executivo</label>
+          <textarea class="pend-summary" rows="2">${escapeHtml(dds.summary)}</textarea>
+        </div>
+        <div class="form-group" style="margin-top:8px">
+          <label>Roteiro de 5 Minutos (separe parágrafos com linha em branco)</label>
+          <textarea class="pend-script" rows="4">${escapeHtml((dds.script || []).join("\n\n"))}</textarea>
+        </div>
+        <div class="form-group" style="margin-top:8px">
+          <label>Checklist de Campo (um item por linha)</label>
+          <textarea class="pend-checklist" rows="3">${escapeHtml((dds.checklist || []).join("\n"))}</textarea>
+        </div>
+        <div class="pending-card-actions">
+          <button type="button" class="btn btn-outline-dark btn-sm" data-reject-dds="${escapeHtml(dds.id)}">Descartar</button>
+          <button type="button" class="btn btn-primary btn-sm" data-approve-dds="${escapeHtml(dds.id)}">✓ Validar Tecnicamente e Liberar p/ Segunda-feira</button>
+        </div>
+      </div>`
+    )
+    .join("");
+}
+
+function openDdsModal(ddsId) {
+  const dds = state.ddsKits.find((k) => k.id === ddsId);
+  if (!dds) return;
+  state.activeDdsModal = dds;
+
+  els.ddsModalBadge.textContent = `${dds.areaLabel} • ${dds.norm} • Validado por ${dds.validatedBy || "Cleilson TST"}`;
+  els.ddsModalTitle.textContent = dds.title;
+  els.ddsModalContent.innerHTML = `
+    <div class="summary-box" style="margin-bottom:16px">
+      <span class="summary-pill">RESUMO RÁPIDO (30s)</span>
+      <p style="margin:6px 0 0">${escapeHtml(dds.summary)}</p>
+    </div>
+    <h4>Roteiro de 5 Minutos para o Turno</h4>
+    ${(dds.script || []).map((p, i) => `<p id="dds-line-${i}">${escapeHtml(p)}</p>`).join("")}
+    <h4>Perguntas de Engajamento para a Equipe</h4>
+    <ol>${(dds.questions || []).map((q) => `<li>${escapeHtml(q)}</li>`).join("")}</ol>
+    <div class="article-checklist" style="margin:14px 0 0">
+      <h3>Checklist Rápido de Campo</h3>
+      <ul>${(dds.checklist || []).map((c) => `<li>${escapeHtml(c)}</li>`).join("")}</ul>
+    </div>
+  `;
+  els.ddsReaderModal.hidden = false;
+}
+
+function listenToDds(ddsId) {
+  const dds = state.ddsKits.find((k) => k.id === ddsId);
+  if (!dds) return;
+  const segments = [
+    { text: `Kit Dê Dê Ésse validado por Cleilson. ${dds.title}`, kind: "title" },
+    { text: dds.summary, kind: "body" },
+    ...(dds.script || []).map((p, i) => ({ text: p, elementId: `dds-line-${i}`, kind: "body" })),
+    { text: `Checklist de campo: ${(dds.checklist || []).join(". ")}`, kind: "tip" }
+  ];
+  reader.start(segments, "dds");
+  showToast("🔊 Reproduzindo Kit de DDS em voz humanizada...");
 }
 
 function renderTrending() {
@@ -382,7 +554,6 @@ function openArticle(slug, { autoPlayMode = null, updateHash = true } = {}) {
   els.artSubtitle.textContent = post.subtitle;
   els.artMetaDetails.textContent = `${post.date} • ${post.readTime} • ${post.views || "Novo"} visualizações`;
 
-  // Resumo Executivo (30s)
   els.artSummaryList.innerHTML = (post.summary || [])
     .map((item, i) => `<li id="summary-item-${i}">${escapeHtml(item)}</li>`)
     .join("");
@@ -393,7 +564,6 @@ function openArticle(slug, { autoPlayMode = null, updateHash = true } = {}) {
   els.artImage.alt = post.title;
   els.artImageCaption.textContent = post.imageCaption || "";
 
-  // Corpo do artigo + Anúncio In-Article após o 2º bloco
   const bodyHtml = [];
   (post.content || []).forEach((block, i) => {
     const elId = `art-block-${i}`;
@@ -434,7 +604,6 @@ function openArticle(slug, { autoPlayMode = null, updateHash = true } = {}) {
 
   els.artBody.innerHTML = bodyHtml.join("");
 
-  // Relacionados
   const related = state.posts.filter((p) => p.slug !== post.slug).slice(0, 2);
   els.relatedGrid.innerHTML = related
     .map(
@@ -460,29 +629,30 @@ function openArticle(slug, { autoPlayMode = null, updateHash = true } = {}) {
 }
 
 function buildAudioSegments(post, mode) {
-  const segments = [{ text: post.title, elementId: "art-title" }];
+  const segments = [{ text: post.title, elementId: "art-title", kind: "title" }];
 
   if (mode === "summary") {
-    segments.push({ text: "Resumo em 30 segundos:", elementId: "article-summary-box" });
+    segments.push({ text: "Resumo em 30 segundos:", elementId: "article-summary-box", kind: "heading" });
     (post.summary || []).forEach((s, i) => {
-      segments.push({ text: s, elementId: `summary-item-${i}` });
+      segments.push({ text: s, elementId: `summary-item-${i}`, kind: "body" });
     });
     if (post.practicalTip) {
-      segments.push({ text: `Aplicação prática no campo: ${post.practicalTip}`, elementId: "summary-tip" });
+      segments.push({ text: `Aplicação prática no campo: ${post.practicalTip}`, elementId: "summary-tip", kind: "tip" });
     }
     return segments;
   }
 
-  // Modo completo
-  segments.push({ text: post.subtitle, elementId: "art-subtitle" });
+  segments.push({ text: post.subtitle, elementId: "art-subtitle", kind: "body" });
   (post.content || []).forEach((block, i) => {
     const elId = `art-block-${i}`;
-    if (block.type === "checklist") {
-      segments.push({ text: `${block.title}. ${(block.items || []).join(". ")}`, elementId: elId });
+    if (block.type === "h2") {
+      segments.push({ text: block.text, elementId: elId, kind: "heading" });
+    } else if (block.type === "checklist") {
+      segments.push({ text: `${block.title}. ${(block.items || []).join(". ")}`, elementId: elId, kind: "tip" });
     } else if (block.type === "callout") {
-      segments.push({ text: `${block.title}. ${block.text}`, elementId: elId });
+      segments.push({ text: `${block.title}. ${block.text}`, elementId: elId, kind: "tip" });
     } else {
-      segments.push({ text: block.text, elementId: elId });
+      segments.push({ text: block.text, elementId: elId, kind: "body" });
     }
   });
   return segments;
@@ -513,6 +683,38 @@ function closeArticle({ scrollToId = null } = {}) {
 }
 
 // =========================================================================
+// ESTÚDIO DO CLEILSON (ABAS + CONFIGURAÇÕES)
+// =========================================================================
+function openStudio(tabName = "validation") {
+  els.editorModal.hidden = false;
+  switchStudioTab(tabName);
+  syncConfigForm();
+  renderPendingDdsQueue();
+}
+
+function switchStudioTab(tabName) {
+  document.querySelectorAll(".studio-tab").forEach((t) => {
+    t.classList.toggle("active", t.dataset.studioTab === tabName);
+  });
+  document.querySelectorAll(".studio-panel").forEach((p) => {
+    p.hidden = p.id !== `studio-panel-${tabName}`;
+  });
+}
+
+function syncConfigForm() {
+  const voiceCfg = reader.getNeuralConfig();
+  const aiCfg = loadAiConfig();
+  const vp = document.getElementById("cfg-voice-provider");
+  const vk = document.getElementById("cfg-voice-key");
+  const ap = document.getElementById("cfg-ai-provider");
+  const ak = document.getElementById("cfg-ai-key");
+  if (vp) vp.value = voiceCfg.provider || "browser";
+  if (vk) vk.value = voiceCfg.apiKey || "";
+  if (ap) ap.value = aiCfg.provider || "gemini";
+  if (ak) ak.value = aiCfg.apiKey || "";
+}
+
+// =========================================================================
 // EVENTOS & INTERAÇÕES
 // =========================================================================
 function initTheme() {
@@ -528,8 +730,8 @@ function initTheme() {
 }
 
 function bindEvents() {
-  // Delegação de cliques para abrir artigos ou iniciar áudio direto da capa/cards
-  document.addEventListener("click", (e) => {
+  document.addEventListener("click", async (e) => {
+    // Ações de Artigos
     const listenBtn = e.target.closest("[data-listen-slug]");
     if (listenBtn) {
       e.stopPropagation();
@@ -543,6 +745,82 @@ function bindEvents() {
       return;
     }
 
+    // Ações dos Kits de DDS (Biblioteca Pública)
+    const openDdsBtn = e.target.closest("[data-open-dds]");
+    if (openDdsBtn) {
+      openDdsModal(openDdsBtn.dataset.openDds);
+      return;
+    }
+
+    const listenDdsBtn = e.target.closest("[data-listen-dds]");
+    if (listenDdsBtn) {
+      listenToDds(listenDdsBtn.dataset.listenDds);
+      return;
+    }
+
+    const waDdsBtn = e.target.closest("[data-wa-dds]");
+    if (waDdsBtn) {
+      const dds = state.ddsKits.find((k) => k.id === waDdsBtn.dataset.waDds);
+      if (dds) {
+        try {
+          await navigator.clipboard.writeText(formatDdsForWhatsApp(dds));
+          showToast("Kit de DDS copiado! Cole direto no grupo de WhatsApp do turno.");
+        } catch {
+          showToast("Não foi possível copiar automaticamente.");
+        }
+      }
+      return;
+    }
+
+    const pdfDdsBtn = e.target.closest("[data-pdf-dds]");
+    if (pdfDdsBtn) {
+      const dds = state.ddsKits.find((k) => k.id === pdfDdsBtn.dataset.pdfDds);
+      if (dds) printDdsCard(dds);
+      return;
+    }
+
+    // Validação Técnica do Cleilson (Aprovar ou Descartar DDS gerado por IA)
+    const approveBtn = e.target.closest("[data-approve-dds]");
+    if (approveBtn) {
+      const id = approveBtn.dataset.approveDds;
+      const card = approveBtn.closest(".pending-dds-card");
+      const target = state.ddsKits.find((k) => k.id === id);
+      if (target && card) {
+        target.title = card.querySelector(".pend-title").value.trim() || target.title;
+        target.norm = card.querySelector(".pend-norm").value.trim() || target.norm;
+        target.summary = card.querySelector(".pend-summary").value.trim() || target.summary;
+        target.script = card
+          .querySelector(".pend-script")
+          .value.split(/\n\s*\n/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        target.checklist = card
+          .querySelector(".pend-checklist")
+          .value.split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        target.status = "approved";
+        target.validatedBy = "Cleilson TST";
+        target.validatedAt = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+        target.weekLabel = "Liberado p/ Segunda-Feira";
+        saveDdsKits(state.ddsKits);
+        renderDdsHub();
+        renderPendingDdsQueue();
+        showToast("✓ DDS validado pelo Cleilson! Publicado no site e agendado para segunda-feira.");
+      }
+      return;
+    }
+
+    const rejectBtn = e.target.closest("[data-reject-dds]");
+    if (rejectBtn) {
+      const id = rejectBtn.dataset.rejectDds;
+      state.ddsKits = state.ddsKits.filter((k) => k.id !== id);
+      saveDdsKits(state.ddsKits);
+      renderPendingDdsQueue();
+      showToast("Rascunho descartado da fila.");
+      return;
+    }
+
     if (e.target.id === "in-article-ad-cta") {
       e.preventDefault();
       closeArticle({ scrollToId: "anuncie" });
@@ -551,9 +829,98 @@ function bindEvents() {
 
     const closeModalBtn = e.target.closest("[data-close-modal]");
     if (closeModalBtn) {
-      document.getElementById(closeModalBtn.dataset.closeModal).hidden = true;
+      const mId = closeModalBtn.dataset.closeModal;
+      document.getElementById(mId).hidden = true;
+      if (mId === "dds-reader-modal") reader.stop();
     }
   });
+
+  // Abas do Estúdio
+  document.querySelectorAll(".studio-tab").forEach((tab) => {
+    tab.addEventListener("click", () => switchStudioTab(tab.dataset.studioTab));
+  });
+
+  // Filtros de Kits DDS
+  document.querySelectorAll(".dds-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.ddsArea = btn.dataset.ddsArea;
+      document.querySelectorAll(".dds-tab").forEach((b) => b.classList.toggle("active", b === btn));
+      renderDdsHub();
+    });
+  });
+
+  // Botões do Modal Leitor de DDS
+  els.ddsModalListen.addEventListener("click", () => {
+    if (state.activeDdsModal) listenToDds(state.activeDdsModal.id);
+  });
+  els.ddsModalWhatsapp.addEventListener("click", async () => {
+    if (!state.activeDdsModal) return;
+    await navigator.clipboard.writeText(formatDdsForWhatsApp(state.activeDdsModal));
+    showToast("Roteiro copiado para o WhatsApp!");
+  });
+  els.ddsModalPrint.addEventListener("click", () => {
+    if (state.activeDdsModal) printDdsCard(state.activeDdsModal);
+  });
+
+  // Gerar Novo DDS com IA (Gemini / GPT / Demo)
+  els.generateAiDdsBtn.addEventListener("click", async () => {
+    const btn = els.generateAiDdsBtn;
+    const oldText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "⏳ Pesquisando tendências SST...";
+    try {
+      const draft = await generateAiDdsDraft(els.aiTopicInput.value.trim());
+      state.ddsKits.unshift(draft);
+      saveDdsKits(state.ddsKits);
+      els.aiTopicInput.value = "";
+      renderPendingDdsQueue();
+      showToast("✨ Novo DDS gerado pela IA! Revise os pontos e clique em Validar.");
+    } catch (err) {
+      showToast(err.message || "Erro ao gerar DDS com IA.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
+  });
+
+  // Exportar JSON dos Kits de DDS (para sincronizar com GitHub Actions)
+  els.exportDdsJsonBtn.addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(state.ddsKits, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "dds-kits-validados.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("JSON de Kits DDS exportado!");
+  });
+
+  // Salvar configurações de Voz Neural HD e IA
+  els.voiceAiConfigForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const fd = new FormData(els.voiceAiConfigForm);
+    reader.saveNeuralConfig({
+      provider: String(fd.get("voiceProvider")),
+      apiKey: String(fd.get("voiceApiKey") || "").trim()
+    });
+    saveAiConfig({
+      provider: String(fd.get("aiProvider")),
+      apiKey: String(fd.get("aiApiKey") || "").trim()
+    });
+    showToast("✓ Configurações de Voz Neural HD e IA salvas com sucesso!");
+  });
+
+  // Atalhos para abrir o Estúdio na aba certa
+  ["open-editor-top", "open-editor-about", "open-editor-footer"].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener("click", () => openStudio("publish"));
+  });
+
+  const openValBtn = document.getElementById("open-validation-queue-btn");
+  if (openValBtn) openValBtn.addEventListener("click", () => openStudio("validation"));
+
+  const openVoiceCfgBtn = document.getElementById("open-voice-config");
+  if (openVoiceCfgBtn) openVoiceCfgBtn.addEventListener("click", () => openStudio("ai-voice"));
 
   // Navegação por categoria no header/footer
   document.querySelectorAll("[data-nav-cat]").forEach((link) => {
@@ -568,7 +935,6 @@ function bindEvents() {
     });
   });
 
-  // Links de âncora normais enquanto no leitor
   document.querySelectorAll('a[href^="#"]').forEach((a) => {
     a.addEventListener("click", () => {
       const targetId = a.getAttribute("href").slice(1);
@@ -579,7 +945,6 @@ function bindEvents() {
     });
   });
 
-  // Filtros de formato e categoria
   document.querySelectorAll(".format-pill").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.format = btn.dataset.format;
@@ -596,20 +961,14 @@ function bindEvents() {
     });
   });
 
-  // Busca instantânea
   els.searchInput.addEventListener("input", (e) => {
     state.search = e.target.value;
     if (state.currentPost) closeArticle({ scrollToId: "feed" });
     renderFeed();
   });
 
-  // Voltar ao portal
   els.backToHome.addEventListener("click", () => closeArticle());
-
-  // Menu mobile
-  els.mobileMenuBtn.addEventListener("click", () => {
-    els.mainNav.classList.toggle("open");
-  });
+  els.mobileMenuBtn.addEventListener("click", () => els.mainNav.classList.toggle("open"));
 
   // Controles de Auto-Leitura (TTS)
   els.ttsPlaySummary.addEventListener("click", () => startPostAudio("summary"));
@@ -637,12 +996,6 @@ function bindEvents() {
     } catch {
       showToast("Copie o endereço da barra do navegador.");
     }
-  });
-
-  // Modais: Área do Editor & Privacidade
-  ["open-editor-top", "open-editor-about", "open-editor-footer"].forEach((id) => {
-    const btn = document.getElementById(id);
-    if (btn) btn.addEventListener("click", () => (els.editorModal.hidden = false));
   });
 
   document.getElementById("open-privacy-btn").addEventListener("click", () => {
@@ -719,7 +1072,6 @@ function bindEvents() {
     openArticle(newPost.slug);
   });
 
-  // Exportar JSON dos posts para versionar no GitHub
   els.exportJsonBtn.addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(state.posts, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -731,14 +1083,19 @@ function bindEvents() {
     showToast("Arquivo JSON exportado! Ideal para salvar no repositório GitHub.");
   });
 
-  // Formulários de Newsletter & Anunciante
+  // Formulários de Newsletter (Inscrição para Kits Automáticos de Segunda-Feira)
   ["sidebar-newsletter-form", "article-newsletter-form"].forEach((id) => {
     const form = document.getElementById(id);
     if (!form) return;
     form.addEventListener("submit", (e) => {
       e.preventDefault();
+      const fd = new FormData(form);
+      addSubscriber(String(fd.get("email") || ""), String(fd.get("name") || ""));
+      if (els.ddsSubCounter) {
+        els.ddsSubCounter.textContent = getSubscriberCount().toLocaleString("pt-BR");
+      }
       form.reset();
-      showToast("Inscrição confirmada! Seu Kit de Checklists de DDS foi enviado.");
+      showToast("✓ Inscrição confirmada! Você receberá os Kits de DDS validados toda segunda-feira às 06h.");
     });
   });
 
@@ -748,14 +1105,12 @@ function bindEvents() {
     showToast("Proposta solicitada! A equipe comercial do Cleilson TST retornará em breve.");
   });
 
-  // Barra de progresso no scroll
   window.addEventListener("scroll", () => {
     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
     const pct = docHeight > 0 ? Math.min(100, Math.max(0, (window.scrollY / docHeight) * 100)) : 0;
     els.readingProgress.style.width = `${pct}%`;
   });
 
-  // Navegação por hash (compartilhamento de link direto do artigo)
   window.addEventListener("hashchange", handleRouteFromHash);
 }
 
@@ -776,9 +1131,12 @@ function handleRouteFromHash() {
 function init() {
   initTheme();
   loadPosts();
+  state.ddsKits = loadDdsKits();
   renderStaticBranding();
   renderHero();
   renderFeed();
+  renderDdsHub();
+  renderPendingDdsQueue();
   renderTrending();
   renderShorts();
   renderInfographics();

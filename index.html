@@ -78,6 +78,7 @@
         <a href="#feed" data-nav-cat="offshore" class="nav-link">Offshore</a>
         <a href="#feed" data-nav-cat="onshore" class="nav-link">Onshore</a>
         <a href="#feed" data-nav-cat="nrs" class="nav-link">NRs</a>
+        <a href="#kits-dds" class="nav-link">Kits DDS</a>
         <a href="#videos" class="nav-link">Vídeos Curtos</a>
         <a href="#infograficos" class="nav-link">Infográficos</a>
         <a href="#sobre" class="nav-link">Cleilson</a>
@@ -102,7 +103,7 @@
           </svg>
         </button>
 
-        <a href="#newsletter-section" class="btn btn-primary btn-sm hide-mobile">Kit DDS Grátis</a>
+        <a href="#kits-dds" class="btn btn-primary btn-sm hide-mobile">Kits DDS Grátis</a>
 
         <button type="button" id="mobile-menu-btn" class="icon-btn mobile-only" aria-label="Abrir menu">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -247,6 +248,67 @@
       </div>
     </section>
 
+    <!-- =========================================================
+         SEÇÃO INTERNA: CENTRAL DE KITS DE DDS (AUTOMÁTICO + VALIDADO)
+         ========================================================= -->
+    <section id="kits-dds" class="dds-hub-section">
+      <div class="container">
+        <div class="section-header-bar">
+          <div>
+            <span class="eyebrow">CENTRAL DE KITS DE DDS • OFFSHORE &amp; ONSHORE</span>
+            <h2>Kits de DDS Prontos — Receba Toda Segunda-Feira Automaticamente</h2>
+          </div>
+          <div class="dds-hub-header-actions">
+            <button type="button" id="open-validation-queue-btn" class="btn btn-dark btn-sm">
+              ⚡ Fila de Validação IA (<span id="pending-dds-badge">0</span>)
+            </button>
+          </div>
+        </div>
+
+        <div class="dds-workflow-banner">
+          <div class="dds-wf-step">
+            <span class="wf-num">1</span>
+            <div>
+              <strong>Estudo de Mercado IA</strong>
+              <small>Gemini/GPT analisa tendências de SST e NRs da semana</small>
+            </div>
+          </div>
+          <div class="dds-wf-arrow" aria-hidden="true">→</div>
+          <div class="dds-wf-step">
+            <span class="wf-num">2</span>
+            <div>
+              <strong>Validação Técnica do Cleilson</strong>
+              <small>Cleilson revisa, corrige e libera com selo técnico</small>
+            </div>
+          </div>
+          <div class="dds-wf-arrow" aria-hidden="true">→</div>
+          <div class="dds-wf-step">
+            <span class="wf-num">3</span>
+            <div>
+              <strong>Envio Automático Segunda 06h</strong>
+              <small>Inscritos recebem no e-mail + acesso liberado no site</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="dds-filter-row">
+          <div class="category-tabs" style="margin-bottom:0">
+            <button type="button" class="dds-tab active" data-dds-area="all">Todos os Kits</button>
+            <button type="button" class="dds-tab" data-dds-area="offshore">Offshore (NR-37)</button>
+            <button type="button" class="dds-tab" data-dds-area="onshore">Onshore &amp; Indústria</button>
+            <button type="button" class="dds-tab" data-dds-area="nrs">NRs Críticas</button>
+          </div>
+          <div class="dds-auto-sub-pill">
+            <span>📬 <strong id="dds-sub-counter">12.400</strong> profissionais recebendo toda segunda-feira</span>
+          </div>
+        </div>
+
+        <div id="dds-kits-grid" class="dds-kits-grid">
+          <!-- Renderizado dinamicamente via app.js -->
+        </div>
+      </div>
+    </section>
+
     <!-- Seção Dedicada: Vídeos Curtos & Pílulas de Segurança (Shorts / Reels) -->
     <section id="videos" class="shorts-section">
       <div class="container">
@@ -377,13 +439,17 @@
             <div class="tts-title-group">
               <span class="tts-icon-badge" id="tts-wave-badge" aria-hidden="true">🔊</span>
               <div>
-                <strong>Auto-Leitura Inteligente (Ouça este conteúdo)</strong>
-                <small id="tts-status-text">Prefere ouvir? Aperte o play para escutar o resumo ou o artigo completo.</small>
+                <div class="tts-title-line">
+                  <strong>Auto-Leitura Humanizada</strong>
+                  <span id="tts-engine-pill" class="tts-engine-pill">Voz Natural PT-BR</span>
+                </div>
+                <small id="tts-status-text">Com pronúncia técnica de SST e pausas naturais. Aperte o play para ouvir!</small>
               </div>
             </div>
             <div class="tts-mode-buttons">
               <button type="button" id="tts-play-summary" class="btn btn-outline-amber btn-sm">▶ Ouvir Só o Resumo</button>
               <button type="button" id="tts-play-full" class="btn btn-primary btn-sm">▶ Ouvir Artigo Completo</button>
+              <button type="button" id="open-voice-config" class="tts-ctrl-btn" title="Configurar Voz Neural HD (OpenAI / ElevenLabs)">⚙ Voz HD</button>
             </div>
           </div>
 
@@ -403,11 +469,11 @@
             <div class="tts-settings">
               <label for="tts-rate" class="sr-only">Velocidade</label>
               <select id="tts-rate" class="tts-select" title="Velocidade da leitura">
-                <option value="0.85">0.85x</option>
-                <option value="1" selected>1.0x</option>
-                <option value="1.25">1.25x</option>
-                <option value="1.5">1.5x</option>
-                <option value="1.8">1.8x</option>
+                <option value="0.9">0.9x</option>
+                <option value="1.05" selected>1.05x (Fluida)</option>
+                <option value="1.2">1.2x</option>
+                <option value="1.4">1.4x</option>
+                <option value="1.65">1.65x</option>
               </select>
               <label for="tts-voice" class="sr-only">Voz</label>
               <select id="tts-voice" class="tts-select tts-voice-select" title="Selecionar voz em português">
@@ -521,83 +587,188 @@
   </footer>
 
   <!-- =========================================================
-       MODAL: ÁREA DO EDITOR (CRIAR & PUBLICAR NOVOS POSTS)
+       MODAL: ESTÚDIO DO CLEILSON (VALIDAÇÃO DDS IA + EDITOR + VOZ HD)
        ========================================================= -->
   <div id="editor-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="editor-modal-title">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
       <div class="modal-header">
         <div>
-          <span class="eyebrow">ESTÚDIO DO CLEILSON</span>
-          <h3 id="editor-modal-title">Publicar Novo Conteúdo</h3>
+          <span class="eyebrow">ESTÚDIO &amp; AUTOMAÇÃO DO CLEILSON</span>
+          <h3 id="editor-modal-title">Central Editorial, Validação IA &amp; Voz Neural</h3>
         </div>
         <button type="button" class="modal-close" data-close-modal="editor-modal" aria-label="Fechar">✕</button>
       </div>
-      <form id="editor-form" class="editor-form">
-        <div class="form-row-2">
-          <div class="form-group">
-            <label for="ed-type">Formato da Publicação</label>
-            <select id="ed-type" name="type" required>
-              <option value="article">Artigo Completo (Texto + Áudio)</option>
-              <option value="video">Vídeo Curto (Pílula / Shorts)</option>
-              <option value="image">Imagem / Infográfico DDS</option>
-            </select>
+
+      <div class="studio-tabs" role="tablist">
+        <button type="button" class="studio-tab active" data-studio-tab="validation">
+          ⚡ Validação DDS IA (<span id="studio-pending-count">0</span>)
+        </button>
+        <button type="button" class="studio-tab" data-studio-tab="publish">
+          ✍️ Novo Artigo / Vídeo
+        </button>
+        <button type="button" class="studio-tab" data-studio-tab="ai-voice">
+          🎙️ IA &amp; Voz Neural HD
+        </button>
+      </div>
+
+      <!-- ABA 1: FILA DE VALIDAÇÃO TÉCNICA DO CLEILSON -->
+      <div id="studio-panel-validation" class="studio-panel">
+        <div class="ai-generator-bar">
+          <input type="text" id="ai-topic-input" placeholder="Tema opcional (ex: NR-37 H2S, NR-12 prensa, calor...) ou deixe vazio para estudo automático" />
+          <button type="button" id="generate-ai-dds-btn" class="btn btn-primary btn-sm">✨ Pesquisar &amp; Gerar DDS com IA</button>
+        </div>
+        <p class="studio-hint">
+          A IA pesquisa tendências de Segurança do Trabalho (Offshore &amp; Onshore) e cria os rascunhos abaixo. <strong>Nada vai para os inscritos sem a sua validação técnica.</strong> Revise, corrija o que precisar e clique em <strong>Validar e Liberar</strong>.
+        </p>
+
+        <div id="pending-dds-list" class="pending-dds-list">
+          <!-- Renderizado via app.js -->
+        </div>
+
+        <div class="editor-actions" style="margin-top:16px">
+          <button type="button" id="export-dds-json-btn" class="btn btn-outline-dark btn-sm">Exportar Kits DDS (JSON p/ GitHub Actions)</button>
+        </div>
+      </div>
+
+      <!-- ABA 2: PUBLICAR NOVO ARTIGO / VÍDEO / INFOGRÁFICO -->
+      <div id="studio-panel-publish" class="studio-panel" hidden>
+        <form id="editor-form" class="editor-form">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="ed-type">Formato da Publicação</label>
+              <select id="ed-type" name="type" required>
+                <option value="article">Artigo Completo (Texto + Áudio)</option>
+                <option value="video">Vídeo Curto (Pílula / Shorts)</option>
+                <option value="image">Imagem / Infográfico DDS</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="ed-category">Área / Categoria</label>
+              <select id="ed-category" name="category" required>
+                <option value="offshore">Offshore (NR-37)</option>
+                <option value="onshore">Onshore &amp; Indústria</option>
+                <option value="nrs">NRs &amp; Legislação</option>
+                <option value="dds">DDS &amp; Cultura</option>
+              </select>
+            </div>
           </div>
+
           <div class="form-group">
-            <label for="ed-category">Área / Categoria</label>
-            <select id="ed-category" name="category" required>
-              <option value="offshore">Offshore (NR-37)</option>
-              <option value="onshore">Onshore &amp; Indústria</option>
-              <option value="nrs">NRs &amp; Legislação</option>
-              <option value="dds">DDS &amp; Cultura</option>
-            </select>
+            <label for="ed-title">Título Chamativo (SEO &amp; Alta Conversão)</label>
+            <input type="text" id="ed-title" name="title" placeholder="Ex: 5 Cuidados Essenciais na Movimentação de Cargas Offshore" required />
           </div>
-        </div>
 
-        <div class="form-group">
-          <label for="ed-title">Título Chamativo (SEO &amp; Alta Conversão)</label>
-          <input type="text" id="ed-title" name="title" placeholder="Ex: 5 Cuidados Essenciais na Movimentação de Cargas Offshore" required />
-        </div>
-
-        <div class="form-group">
-          <label for="ed-subtitle">Subtítulo / Chamada Curta</label>
-          <input type="text" id="ed-subtitle" name="subtitle" placeholder="Resumo em 1 frase que desperta curiosidade..." required />
-        </div>
-
-        <div class="form-group">
-          <label for="ed-summary">Pontos do Resumo em 30s (um tópico por linha)</label>
-          <textarea id="ed-summary" name="summary" rows="3" placeholder="Ponto chave 1&#10;Ponto chave 2&#10;Ponto chave 3" required></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="ed-tip">Aplicação Prática no Campo (Dica do Cleilson)</label>
-          <input type="text" id="ed-tip" name="practicalTip" placeholder="Uma ação imediata para o leitor aplicar no próximo turno..." required />
-        </div>
-
-        <div class="form-group">
-          <label for="ed-body">Texto Completo ou Roteiro do Vídeo (separe parágrafos com linha em branco)</label>
-          <textarea id="ed-body" name="body" rows="6" placeholder="Escreva o conteúdo completo aqui. Ele também será lido automaticamente pela Auto-Leitura..." required></textarea>
-        </div>
-
-        <div class="form-row-2">
           <div class="form-group">
-            <label for="ed-image">Imagem de Capa</label>
-            <select id="ed-image" name="image">
-              <option value="assets/images/hero-offshore.jpg">Plataforma Offshore (NR-37)</option>
-              <option value="assets/images/onshore-industry.jpg">Planta Industrial Onshore</option>
-              <option value="assets/images/nr35-height.jpg">Trabalho em Altura (NR-35)</option>
-            </select>
+            <label for="ed-subtitle">Subtítulo / Chamada Curta</label>
+            <input type="text" id="ed-subtitle" name="subtitle" placeholder="Resumo em 1 frase que desperta curiosidade..." required />
           </div>
-          <div class="form-group">
-            <label for="ed-readtime">Tempo de Leitura / Duração</label>
-            <input type="text" id="ed-readtime" name="readTime" value="4 min de leitura" required />
-          </div>
-        </div>
 
-        <div class="editor-actions">
-          <button type="button" id="export-json-btn" class="btn btn-outline-dark">Exportar JSON dos Posts</button>
-          <button type="submit" class="btn btn-primary">Publicar Agora no Portal</button>
+          <div class="form-group">
+            <label for="ed-summary">Pontos do Resumo em 30s (um tópico por linha)</label>
+            <textarea id="ed-summary" name="summary" rows="3" placeholder="Ponto chave 1&#10;Ponto chave 2&#10;Ponto chave 3" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="ed-tip">Aplicação Prática no Campo (Dica do Cleilson)</label>
+            <input type="text" id="ed-tip" name="practicalTip" placeholder="Uma ação imediata para o leitor aplicar no próximo turno..." required />
+          </div>
+
+          <div class="form-group">
+            <label for="ed-body">Texto Completo ou Roteiro do Vídeo (separe parágrafos com linha em branco)</label>
+            <textarea id="ed-body" name="body" rows="5" placeholder="Escreva o conteúdo completo aqui. Ele também será lido automaticamente pela Auto-Leitura..." required></textarea>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="ed-image">Imagem de Capa</label>
+              <select id="ed-image" name="image">
+                <option value="assets/images/hero-offshore.jpg">Plataforma Offshore (NR-37)</option>
+                <option value="assets/images/onshore-industry.jpg">Planta Industrial Onshore</option>
+                <option value="assets/images/nr35-height.jpg">Trabalho em Altura (NR-35)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="ed-readtime">Tempo de Leitura / Duração</label>
+              <input type="text" id="ed-readtime" name="readTime" value="4 min de leitura" required />
+            </div>
+          </div>
+
+          <div class="editor-actions">
+            <button type="button" id="export-json-btn" class="btn btn-outline-dark">Exportar JSON dos Posts</button>
+            <button type="submit" class="btn btn-primary">Publicar Agora no Portal</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ABA 3: CONFIGURAÇÃO DE VOZ NEURAL HD & IA GERADORA DE DDS -->
+      <div id="studio-panel-ai-voice" class="studio-panel" hidden>
+        <form id="voice-ai-config-form" class="editor-form">
+          <div class="config-box">
+            <h4>🎙️ Motor de Voz da Auto-Leitura (Humanizada / Neural HD)</h4>
+            <p class="studio-hint" style="margin-top:4px">
+              No modo <strong>Navegador Otimizado</strong>, o site já aplica dicionário técnico de SST, pausas respiradas e prioriza vozes Neurais do Edge/Chrome. Para voz indistinguível de locutor humano em qualquer aparelho, conecte <strong>OpenAI TTS HD</strong> ou <strong>ElevenLabs</strong>.
+            </p>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="cfg-voice-provider">Provedor de Voz</label>
+                <select id="cfg-voice-provider" name="voiceProvider">
+                  <option value="browser">Voz Natural do Navegador (Grátis / Prosódia SST)</option>
+                  <option value="openai">OpenAI TTS HD (Voz Neural Ultra-Fluida)</option>
+                  <option value="elevenlabs">ElevenLabs Multilingual v2 (Estúdio)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="cfg-voice-key">Chave API de Voz (salva só no seu navegador)</label>
+                <input type="password" id="cfg-voice-key" name="voiceApiKey" placeholder="sk-... ou chave ElevenLabs" />
+              </div>
+            </div>
+          </div>
+
+          <div class="config-box">
+            <h4>🤖 IA para Estudo de Mercado &amp; Criação Semanal de DDS</h4>
+            <p class="studio-hint" style="margin-top:4px">
+              Conecte sua chave gratuita do <strong>Google Gemini</strong> ou <strong>OpenAI</strong> para gerar Kits de DDS reais sob demanda aqui no painel (além da automação semanal via GitHub Actions incluída no repositório).
+            </p>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="cfg-ai-provider">Provedor de IA (Criação de DDS)</label>
+                <select id="cfg-ai-provider" name="aiProvider">
+                  <option value="gemini">Google Gemini 2.5 Flash (Recomendado / Cota Grátis)</option>
+                  <option value="openai">OpenAI GPT-4o Mini</option>
+                  <option value="demo">Modo Demonstração (Sem chave)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="cfg-ai-key">Chave API Gemini / OpenAI</label>
+                <input type="password" id="cfg-ai-key" name="aiApiKey" placeholder="AIza... ou sk-..." />
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-actions">
+            <button type="submit" class="btn btn-primary">Salvar Configurações de Voz &amp; IA</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LEITOR DE KIT DDS COMPLETO -->
+  <div id="dds-reader-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="dds-modal-title">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div>
+          <span id="dds-modal-badge" class="badge-cat"></span>
+          <h3 id="dds-modal-title" style="margin-top:8px"></h3>
         </div>
-      </form>
+        <button type="button" class="modal-close" data-close-modal="dds-reader-modal" aria-label="Fechar">✕</button>
+      </div>
+      <div id="dds-modal-content" class="dds-modal-body"></div>
+      <div class="editor-actions" style="margin-top:18px">
+        <button type="button" id="dds-modal-listen" class="btn btn-dark btn-sm">🔊 Ouvir DDS (Voz Humanizada)</button>
+        <button type="button" id="dds-modal-whatsapp" class="btn btn-outline-dark btn-sm">Copiar p/ WhatsApp</button>
+        <button type="button" id="dds-modal-print" class="btn btn-primary btn-sm">Imprimir / Salvar PDF</button>
+      </div>
     </div>
   </div>
 

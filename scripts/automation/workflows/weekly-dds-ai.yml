@@ -1,0 +1,44 @@
+name: Gerar Kits de DDS com IA (Validação Cleilson)
+
+on:
+  schedule:
+    # Toda sexta-feira às 08h00 (Brasília = 11h00 UTC)
+    - cron: "0 11 * * 5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate-dds:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Pesquisar tendências SST no Google e gerar DDS via Gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/automation/generate_weekly_dds.py
+
+      - name: Abrir Pull Request pedindo Validação Técnica do Cleilson
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ai/dds-semanal-validacao
+          commit-message: "feat(dds): novos kits de DDS gerados por IA aguardando validação do Cleilson"
+          title: "📋 Validação Técnica do Cleilson: Novos Kits de DDS da Semana"
+          body: |
+            Olá **Cleilson**!
+
+            A IA pesquisou as tendências atuais de Segurança do Trabalho (Offshore & Onshore) e preparou os **Kits de DDS da próxima segunda-feira** em `data/weekly-dds-pending.json`.
+
+            ### Como liberar para envio automático:
+            1. Revise os pontos técnicos e corrija o que achar necessário no arquivo `data/weekly-dds-pending.json`.
+            2. Altere `"status": "pending_validation"` para `"status": "approved"` e `"validatedBy": "Cleilson TST"`.
+            3. Clique em **Merge Pull Request** — na segunda-feira às 06h o envio será feito automaticamente para todos os inscritos!
