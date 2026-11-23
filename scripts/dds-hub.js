@@ -370,7 +370,7 @@ export function formatDdsForWhatsApp(dds) {
     `📋 *Checklist de Campo:*`,
     checklistText,
     ``,
-    `✔️ _Validado tecnicamente por Cleilson TST — https://vibetech-cmd.github.io/cleilson-tst-blog/_`
+    `✔️ _Validado tecnicamente por Cleilson TST — https://vibetech-cmd.github.io/blog-tst/_`
   ].join("\n");
 }
 
@@ -414,7 +414,7 @@ export function printDdsCard(dds) {
     <ul>${(dds.checklist || []).map((c) => `<li>☐ ${c}</li>`).join("")}</ul>
     <div class="footer">
       <span>Validado Tecnicamente por: <strong>${dds.validatedBy || "Cleilson TST"}</strong></span>
-      <span>Portal: cleilson-tst-blog</span>
+      <span>Portal: blog-tst</span>
     </div>
     <script>window.onload = () => window.print();</script>
   </body>

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://cleilson-tst-blog.github.io/sitemap.xml
+Sitemap: https://vibetech-cmd.github.io/blog-tst/sitemap.xml

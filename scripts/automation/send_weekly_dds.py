@@ -37,7 +37,7 @@ def build_email_html(kits):
       <p style="color:#475569;margin-top:0;">Validado tecnicamente pelo Cleilson e pronto para aplicar no turno desta segunda-feira.</p>
       {''.join(cards)}
       <p style="font-size:12px;color:#64748b;text-align:center;">
-        Acesse todos os artigos com auto-leitura em <a href="https://vibetech-cmd.github.io/cleilson-tst-blog/">Cleilson TST</a>.
+        Acesse todos os artigos com auto-leitura em <a href="https://vibetech-cmd.github.io/blog-tst/">Cleilson TST</a>.
       </p>
     </div>
     """
