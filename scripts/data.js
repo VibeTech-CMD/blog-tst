@@ -13,8 +13,15 @@ export const STORAGE_KEYS = {
   profileCfg: "cleilson_tst_profile_v2",
   ownerAuth: "cleilson_tst_owner_auth_v2",
   adsenseCfg: "cleilson_tst_adsense_v2",
+  categories: "cleilson_tst_categories_v2",
   theme: "cleilson_tst_theme_v1"
 };
+
+export const DEFAULT_CATEGORIES = [
+  { id: "offshore", label: "Offshore (NR-37)" },
+  { id: "onshore", label: "Onshore & Indústria" },
+  { id: "nrs", label: "NRs & Legislação" }
+];
 
 export const SITE_CONFIG = {
   brandName: "Cleilson TST",
@@ -359,6 +366,129 @@ export function saveAdsenseConfig(cfg) {
 }
 
 // =========================================================================
+// ÁREAS / CATEGORIAS DINÂMICAS (MENU SUSPENSO + ADICIONAR NOVA)
+// =========================================================================
+export function loadCategories() {
+  let custom = [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.categories);
+    if (raw) custom = JSON.parse(raw);
+  } catch {
+    custom = [];
+  }
+  const map = new Map();
+  [...DEFAULT_CATEGORIES, ...custom].forEach((c) => {
+    if (c && c.id && c.label) map.set(c.id, c);
+  });
+  return [...map.values()];
+}
+
+export function addCategory(label) {
+  const cleanLabel = String(label || "").trim();
+  if (!cleanLabel) return null;
+  const id = cleanLabel
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  if (!id) return null;
+
+  const existing = loadCategories();
+  const found = existing.find((c) => c.id === id || c.label.toLowerCase() === cleanLabel.toLowerCase());
+  if (found) return found;
+
+  const next = { id, label: cleanLabel };
+  const customOnly = existing.filter((c) => !DEFAULT_CATEGORIES.some((d) => d.id === c.id));
+  customOnly.push(next);
+  localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(customOnly));
+  return next;
+}
+
+/**
+ * Sanitiza HTML colado (Word, Google Docs, WhatsApp, web) preservando formatação útil
+ * (parágrafos, negrito, itálico, sublinhado, subtítulos, listas, citações) e removendo lixo visual.
+ */
+export function sanitizeRichHtml(dirtyHtml = "") {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = String(dirtyHtml || "");
+  const allowedTags = new Set(["P", "BR", "STRONG", "B", "EM", "I", "U", "H2", "H3", "UL", "OL", "LI", "BLOCKQUOTE", "DIV"]);
+
+  function cleanNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return document.createTextNode(node.textContent);
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return document.createTextNode("");
+    }
+
+    const tag = node.tagName.toUpperCase();
+    if (["SCRIPT", "STYLE", "META", "LINK", "OBJECT", "IFRAME", "XML"].includes(tag)) {
+      return document.createTextNode("");
+    }
+
+    // Mapeia H1/H4 para H2/H3 para manter hierarquia editorial limpa
+    let outTag = tag;
+    if (tag === "H1") outTag = "H2";
+    else if (tag === "H4" || tag === "H5" || tag === "H6") outTag = "H3";
+    else if (tag === "B") outTag = "STRONG";
+    else if (tag === "I") outTag = "EM";
+
+    if (!allowedTags.has(outTag)) {
+      const frag = document.createDocumentFragment();
+      Array.from(node.childNodes).forEach((child) => frag.appendChild(cleanNode(child)));
+      // Preserva negrito/itálico/sublinhado vindo de <span> do Google Docs ou Word
+      const style = (node.getAttribute("style") || "").toLowerCase();
+      let wrapped = frag;
+      if (/font-weight\s*:\s*(bold|[6-9]00)/.test(style)) {
+        const strong = document.createElement("strong");
+        strong.appendChild(wrapped);
+        wrapped = strong;
+      }
+      if (/font-style\s*:\s*italic/.test(style)) {
+        const em = document.createElement("em");
+        em.appendChild(wrapped);
+        wrapped = em;
+      }
+      if (/text-decoration[^;]*underline/.test(style)) {
+        const u = document.createElement("u");
+        u.appendChild(wrapped);
+        wrapped = u;
+      }
+      return wrapped;
+    }
+
+    const el = document.createElement(outTag.toLowerCase());
+    if (outTag === "BLOCKQUOTE" || (outTag === "DIV" && node.classList.contains("article-callout"))) {
+      el.className = "article-callout";
+    }
+    Array.from(node.childNodes).forEach((child) => el.appendChild(cleanNode(child)));
+    return el;
+  }
+
+  const wrapper = document.createElement("div");
+  Array.from(tpl.content.childNodes).forEach((child) => wrapper.appendChild(cleanNode(child)));
+  return wrapper.innerHTML.trim();
+}
+
+export function blocksToRichHtml(blocks = []) {
+  const esc = (s = "") =>
+    String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return blocks
+    .map((b) => {
+      if (b.type === "h2") return `<h2>${esc(b.text)}</h2>`;
+      if (b.type === "callout") return `<blockquote class="article-callout"><strong>${esc(b.title || "Destaque")}:</strong> ${esc(b.text)}</blockquote>`;
+      if (b.type === "checklist") {
+        const items = (b.items || []).map((i) => `<li>${esc(i)}</li>`).join("");
+        return `<h3>${esc(b.title || "Pontos de Verificação")}</h3><ul>${items}</ul>`;
+      }
+      const p = esc(b.text || "").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      return `<p>${p}</p>`;
+    })
+    .join("");
+}
+
+// =========================================================================
 // ACESSO UNIFICADO AO ACERVO REAL (INDEX + ARTIGO.HTML)
 // =========================================================================
 export function loadAllPosts() {
@@ -457,10 +587,14 @@ export function saveAnalyticsConfig(cfg) {
 // =========================================================================
 export function calculateReadTime(post) {
   const parts = [post.title || "", post.subtitle || "", ...(post.summary || [])];
-  (post.content || []).forEach((b) => {
-    if (b.text) parts.push(b.text);
-    if (Array.isArray(b.items)) parts.push(b.items.join(" "));
-  });
+  if (post.contentHtml) {
+    parts.push(post.contentHtml.replace(/<[^>]+>/g, " "));
+  } else {
+    (post.content || []).forEach((b) => {
+      if (b.text) parts.push(b.text);
+      if (Array.isArray(b.items)) parts.push(b.items.join(" "));
+    });
+  }
   const words = parts.join(" ").trim().split(/\s+/).filter(Boolean).length;
   const mins = Math.max(1, Math.ceil(words / 200));
   return `${mins} min de leitura`;
@@ -470,12 +604,16 @@ export function extractDynamicSpecialties(posts) {
   const counts = new Map();
 
   for (const post of posts) {
+    const bodyText = post.contentHtml
+      ? post.contentHtml.replace(/<[^>]+>/g, " ")
+      : (post.content || []).map((b) => (b.text || "") + " " + (b.items || []).join(" ")).join(" ");
+
     const fullText = [
       post.title,
       post.subtitle,
       post.categoryLabel,
       ...(post.summary || []),
-      ...(post.content || []).map((b) => (b.text || "") + " " + (b.items || []).join(" "))
+      bodyText
     ].join(" ");
 
     const nrMatches = fullText.match(/\bNR[-\s]?\d{1,2}\b/gi) || [];

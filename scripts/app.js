@@ -9,6 +9,10 @@ import {
   hashSecret,
   loadAdsenseConfig,
   saveAdsenseConfig,
+  loadCategories,
+  addCategory,
+  sanitizeRichHtml,
+  blocksToRichHtml,
   loadAllPosts,
   saveCustomPost,
   deletePostById,
@@ -27,10 +31,12 @@ const SESSION_OWNER_KEY = "cleilson_tst_owner_session_v2";
 const state = {
   posts: [],
   imageBank: [],
+  categories: [],
   profile: loadProfile(),
   category: "all",
   imageFilter: "all",
   search: "",
+  manageSearch: "",
   pendingBankImageDataUrl: "",
   quickCoverTargetPostId: null,
   activeLightboxItem: null,
@@ -47,6 +53,7 @@ const els = {
   footerSecretBrand: document.getElementById("footer-secret-brand"),
 
   heroFeatured: document.getElementById("hero-featured"),
+  homeCategoryTabs: document.getElementById("home-category-tabs"),
   postsGrid: document.getElementById("posts-grid"),
   feedStatus: document.getElementById("feed-status"),
   recentList: document.getElementById("recent-list"),
@@ -82,10 +89,16 @@ const els = {
   edId: document.getElementById("ed-id"),
   edTitle: document.getElementById("ed-title"),
   edCategory: document.getElementById("ed-category"),
+  toggleNewCatBtn: document.getElementById("toggle-new-cat-btn"),
+  newCategoryRow: document.getElementById("new-category-row"),
+  newCategoryInput: document.getElementById("new-category-input"),
+  saveNewCatBtn: document.getElementById("save-new-cat-btn"),
   edSubtitle: document.getElementById("ed-subtitle"),
   edSummary: document.getElementById("ed-summary"),
   edTip: document.getElementById("ed-tip"),
-  edBody: document.getElementById("ed-body"),
+  edRichBody: document.getElementById("ed-rich-body"),
+  richEditorWrapper: document.getElementById("rich-editor-wrapper"),
+  toggleExpandEditor: document.getElementById("toggle-expand-editor"),
   edImageValue: document.getElementById("ed-image-value"),
   edCoverUpload: document.getElementById("ed-cover-upload"),
   quickCoverFile: document.getElementById("quick-cover-file"),
@@ -95,6 +108,8 @@ const els = {
   edCancelEdit: document.getElementById("ed-cancel-edit"),
   edSubmitBtn: document.getElementById("ed-submit-btn"),
   managePostsList: document.getElementById("manage-posts-list"),
+  managePostsSearch: document.getElementById("manage-posts-search"),
+  managePostsCount: document.getElementById("manage-posts-count"),
 
   // Banco de Imagens
   imageBankForm: document.getElementById("image-bank-form"),
@@ -572,26 +587,68 @@ function renderCoverThumbnails() {
     .join("");
 }
 
-function renderManageLists() {
-  els.managePostsList.innerHTML = state.posts
-    .map(
-      (p) => `
-      <div class="manage-row">
-        <div class="manage-img-info">
-          <img src="${escapeHtml(p.image)}" alt="" />
-          <div>
-            <strong>${escapeHtml(p.title)}</strong>
-            <small>${escapeHtml(p.categoryLabel)} • ${escapeHtml(p.date)}</small>
-          </div>
-        </div>
-        <div class="manage-row-actions">
-          <button type="button" class="card-listen-btn" data-quick-cover="${escapeHtml(p.id)}" title="Substituir apenas a imagem de capa">🖼️ Trocar Capa</button>
-          <button type="button" class="card-listen-btn" data-edit-post="${escapeHtml(p.id)}">Editar</button>
-          <button type="button" class="card-listen-btn btn-danger-soft" data-delete-post="${escapeHtml(p.id)}">Excluir</button>
-        </div>
-      </div>`
+function renderCategories() {
+  state.categories = loadCategories();
+
+  // Abas na Home
+  const tabsHtml = [
+    `<button type="button" class="cat-tab ${state.category === "all" ? "active" : ""}" data-category="all">Todas as Áreas</button>`,
+    ...state.categories.map(
+      (c) => `<button type="button" class="cat-tab ${state.category === c.id ? "active" : ""}" data-category="${escapeHtml(c.id)}">${escapeHtml(c.label)}</button>`
     )
+  ].join("");
+  if (els.homeCategoryTabs) els.homeCategoryTabs.innerHTML = tabsHtml;
+
+  // Menu suspenso no Editor
+  const currentVal = els.edCategory.value;
+  els.edCategory.innerHTML = state.categories
+    .map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.label)}</option>`)
     .join("");
+  if (currentVal && state.categories.some((c) => c.id === currentVal)) {
+    els.edCategory.value = currentVal;
+  }
+}
+
+function renderManageLists() {
+  const q = state.manageSearch.trim().toLowerCase();
+  const filteredPosts = state.posts.filter((p) => {
+    if (!q) return true;
+    return (
+      (p.title || "").toLowerCase().includes(q) ||
+      (p.date || "").toLowerCase().includes(q) ||
+      (p.categoryLabel || "").toLowerCase().includes(q)
+    );
+  });
+
+  if (els.managePostsCount) {
+    els.managePostsCount.textContent = q
+      ? `${filteredPosts.length} de ${state.posts.length}`
+      : String(state.posts.length);
+  }
+
+  if (filteredPosts.length === 0) {
+    els.managePostsList.innerHTML = `<div style="padding:18px; text-align:center; color:var(--text-muted); font-size:0.88rem">Nenhuma publicação encontrada para "${escapeHtml(state.manageSearch)}".</div>`;
+  } else {
+    els.managePostsList.innerHTML = filteredPosts
+      .map(
+        (p) => `
+        <div class="manage-row">
+          <div class="manage-img-info">
+            <img src="${escapeHtml(p.image)}" alt="" />
+            <div>
+              <strong>${escapeHtml(p.title)}</strong>
+              <small>${escapeHtml(p.categoryLabel)} • ${escapeHtml(p.date)}</small>
+            </div>
+          </div>
+          <div class="manage-row-actions">
+            <button type="button" class="card-listen-btn" data-quick-cover="${escapeHtml(p.id)}" title="Substituir apenas a imagem de capa">🖼️ Trocar Capa</button>
+            <button type="button" class="card-listen-btn" data-edit-post="${escapeHtml(p.id)}">Editar</button>
+            <button type="button" class="card-listen-btn btn-danger-soft" data-delete-post="${escapeHtml(p.id)}">Excluir</button>
+          </div>
+        </div>`
+      )
+      .join("");
+  }
 
   els.manageImagesList.innerHTML = state.imageBank
     .map(
@@ -613,6 +670,7 @@ function renderManageLists() {
 function resetEditorForm() {
   els.editorForm.reset();
   els.edId.value = "";
+  els.edRichBody.innerHTML = "";
   els.edCancelEdit.hidden = true;
   els.edSubmitBtn.textContent = "✓ Publicar no Site Agora";
   setSelectedCover("assets/images/hero-offshore.jpg", "Capa padrão selecionada");
@@ -623,11 +681,15 @@ function loadPostIntoEditor(id) {
   if (!post) return;
   els.edId.value = post.id;
   els.edTitle.value = post.title;
-  els.edCategory.value = post.category || "offshore";
+  if (!state.categories.some((c) => c.id === post.category) && post.categoryLabel) {
+    addCategory(post.categoryLabel);
+    renderCategories();
+  }
+  els.edCategory.value = post.category || state.categories[0]?.id || "offshore";
   els.edSubtitle.value = post.subtitle || "";
   els.edSummary.value = (post.summary || []).join("\n");
   els.edTip.value = post.practicalTip || "";
-  els.edBody.value = serializeBlocksToEasyText(post.content || []);
+  els.edRichBody.innerHTML = post.contentHtml ? sanitizeRichHtml(post.contentHtml) : blocksToRichHtml(post.content || []);
   setSelectedCover(post.image || "assets/images/hero-offshore.jpg", "Capa atual do artigo");
   els.edCancelEdit.hidden = false;
   els.edSubmitBtn.textContent = "✓ Salvar Alterações";
@@ -667,6 +729,7 @@ function refreshAllViews() {
   state.imageBank = loadImageBank();
   state.profile = loadProfile();
   updateOwnerBar();
+  renderCategories();
   renderProfile();
   renderHero();
   renderFeed();
@@ -789,20 +852,119 @@ function bindEvents() {
       return;
     }
 
-    const toolBtn = e.target.closest("[data-insert]");
-    if (toolBtn) {
-      const kind = toolBtn.dataset.insert;
-      const ta = els.edBody;
-      const snippets = {
-        subtitle: "\n\n## Título da Seção\n\n",
-        bold: " **texto em destaque** ",
-        callout: "\n\nDESTAQUE: Escreva aqui uma orientação importante de campo.\n\n",
-        checklist: "\n\n- Primeiro item para conferir\n- Segundo item para conferir\n- Terceiro item para conferir\n\n"
-      };
-      const pos = ta.selectionStart || ta.value.length;
-      ta.value = ta.value.slice(0, pos) + (snippets[kind] || "") + ta.value.slice(pos);
-      ta.focus();
+    // Categorias dinâmicas da Home (delegado para suportar áreas recém-adicionadas)
+    const catTab = e.target.closest(".cat-tab");
+    if (catTab && catTab.dataset.category) {
+      state.category = catTab.dataset.category;
+      document.querySelectorAll(".cat-tab").forEach((b) => b.classList.toggle("active", b === catTab));
+      renderFeed();
+      return;
     }
+  });
+
+  // Atualiza destaque visual dos botões B / I / U conforme o texto selecionado (como no Word)
+  const syncWordToolbarState = () => {
+    if (document.activeElement !== els.edRichBody) return;
+    document.querySelectorAll(".word-btn[data-cmd]").forEach((btn) => {
+      const cmd = btn.dataset.cmd;
+      if (["bold", "italic", "underline", "insertUnorderedList", "insertOrderedList"].includes(cmd)) {
+        try {
+          btn.classList.toggle("active", document.queryCommandState(cmd));
+        } catch {}
+      }
+    });
+  };
+  document.addEventListener("selectionchange", syncWordToolbarState);
+  els.edRichBody.addEventListener("keyup", syncWordToolbarState);
+  els.edRichBody.addEventListener("mouseup", syncWordToolbarState);
+
+  // Botões da barra estilo Word (usa mousedown + preventDefault para manter o texto selecionado!)
+  document.querySelectorAll(".word-btn").forEach((btn) => {
+    btn.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      els.edRichBody.focus();
+
+      if (btn.dataset.cmd) {
+        document.execCommand(btn.dataset.cmd, false, null);
+        syncWordToolbarState();
+        return;
+      }
+      if (btn.dataset.formatBlock) {
+        document.execCommand("formatBlock", false, btn.dataset.formatBlock);
+        return;
+      }
+      if (btn.dataset.insertCallout) {
+        const sel = window.getSelection();
+        const selectedText = sel && sel.toString().trim() ? sel.toString().trim() : "Escreva aqui uma orientação de destaque...";
+        document.execCommand(
+          "insertHTML",
+          false,
+          `<blockquote class="article-callout"><strong>Destaque:</strong> ${escapeHtml(selectedText)}</blockquote><p><br></p>`
+        );
+      }
+    });
+  });
+
+  // Colagem inteligente no editor: aceita Word, Google Docs, WhatsApp, PDF e adapta sem quebrar layout
+  els.edRichBody.addEventListener("paste", (e) => {
+    e.preventDefault();
+    const htmlData = e.clipboardData?.getData("text/html");
+    const plainData = e.clipboardData?.getData("text/plain") || "";
+
+    let cleanHtml = "";
+    if (htmlData && htmlData.trim()) {
+      cleanHtml = sanitizeRichHtml(htmlData);
+    } else {
+      cleanHtml = plainData
+        .split(/\r?\n\s*\r?\n/)
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .map((p) => `<p>${escapeHtml(p).replace(/\r?\n/g, "<br>")}</p>`)
+        .join("");
+    }
+
+    if (cleanHtml) {
+      document.execCommand("insertHTML", false, cleanHtml);
+    }
+  });
+
+  // Expandir / reduzir área de escrita
+  els.toggleExpandEditor.addEventListener("click", () => {
+    const expanded = els.richEditorWrapper.classList.toggle("expanded");
+    els.toggleExpandEditor.textContent = expanded ? "⤡ Reduzir Tela" : "⤢ Ampliar Tela";
+  });
+
+  // Adicionar nova Área Principal dinamicamente
+  els.toggleNewCatBtn.addEventListener("click", () => {
+    els.newCategoryRow.hidden = !els.newCategoryRow.hidden;
+    if (!els.newCategoryRow.hidden) els.newCategoryInput.focus();
+  });
+
+  const handleSaveNewCategory = () => {
+    const created = addCategory(els.newCategoryInput.value);
+    if (!created) {
+      showToast("Digite o nome da nova área.");
+      return;
+    }
+    renderCategories();
+    els.edCategory.value = created.id;
+    els.newCategoryInput.value = "";
+    els.newCategoryRow.hidden = true;
+    showToast(`✓ Área "${created.label}" adicionada e disponível para futuras publicações!`);
+  };
+
+  els.saveNewCatBtn.addEventListener("click", handleSaveNewCategory);
+  els.newCategoryInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSaveNewCategory();
+    }
+  });
+
+  // Pesquisa em Publicações Anteriores (título, data ou área)
+  els.managePostsSearch.addEventListener("input", (e) => {
+    state.manageSearch = e.target.value;
+    renderManageLists();
   });
 
   // Substituição imediata da imagem de capa de uma publicação existente
@@ -839,12 +1001,16 @@ function bindEvents() {
   els.editorForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const title = els.edTitle.value.trim();
+    const richHtml = sanitizeRichHtml(els.edRichBody.innerHTML);
+    if (!richHtml.replace(/<[^>]+>/g, "").trim()) {
+      showToast("Escreva ou cole o texto completo do artigo antes de publicar.");
+      els.edRichBody.focus();
+      return;
+    }
+
     const category = els.edCategory.value;
-    const catLabels = {
-      offshore: "Offshore • NR-37",
-      onshore: "Onshore • Indústria",
-      nrs: "NRs & Legislação"
-    };
+    const catObj = state.categories.find((c) => c.id === category);
+    const catLabel = catObj ? catObj.label : "Segurança do Trabalho";
 
     const existingId = els.edId.value;
     const existing = existingId ? state.posts.find((p) => p.id === existingId) : null;
@@ -865,7 +1031,7 @@ function bindEvents() {
       slug,
       type: "article",
       category,
-      categoryLabel: catLabels[category] || "Segurança do Trabalho",
+      categoryLabel: catLabel,
       badge: existing ? existing.badge : "Nova Publicação",
       title,
       subtitle: els.edSubtitle.value.trim(),
@@ -874,17 +1040,20 @@ function bindEvents() {
         : new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }),
       featured: existing ? Boolean(existing.featured) : false,
       image: els.edImageValue.value || "assets/images/hero-offshore.jpg",
-      imageCaption: `Publicação técnica de ${state.profile.name} TST — ${catLabels[category] || ""}`,
+      imageCaption: `Publicação técnica de ${state.profile.name} TST — ${catLabel}`,
       summary: els.edSummary.value
         .split("\n")
         .map((s) => s.trim())
         .filter(Boolean),
       practicalTip: els.edTip.value.trim(),
-      content: parseEasyEditorBody(els.edBody.value)
+      contentHtml: richHtml,
+      content: []
     };
 
     saveCustomPost(postObj);
     resetEditorForm();
+    els.richEditorWrapper.classList.remove("expanded");
+    els.toggleExpandEditor.textContent = "⤢ Ampliar Tela";
     refreshAllViews();
     els.editorModal.hidden = true;
     showToast("✓ Publicado! Os indicadores reais e especialidades foram atualizados.");
@@ -1046,14 +1215,6 @@ function bindEvents() {
       document.querySelectorAll(".nav-link").forEach((n) => n.classList.toggle("active", n === link));
       renderFeed();
       els.mainNav.classList.remove("open");
-    });
-  });
-
-  document.querySelectorAll(".cat-tab").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.category = btn.dataset.category;
-      document.querySelectorAll(".cat-tab").forEach((b) => b.classList.toggle("active", b === btn));
-      renderFeed();
     });
   });
 

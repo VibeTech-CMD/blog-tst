@@ -2981,3 +2981,181 @@ button, input, select, textarea {
   font-size: 0.84rem;
   font-weight: 600;
 }
+
+/* ==========================================================================
+   EDITOR VISUAL ESTILO WORD, NOVAS ÁREAS E PESQUISA EM PUBLICAÇÕES ANTERIORES
+   ========================================================================== */
+.category-select-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.category-select-row select {
+  flex: 1;
+}
+
+.new-category-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.new-category-row input {
+  flex: 1;
+}
+
+.rich-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.word-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+}
+
+.word-btn {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 32px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.word-btn:hover, .word-btn.active {
+  background: var(--amber-soft);
+  border-color: var(--amber);
+  color: var(--navy);
+}
+
+.word-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--border-strong);
+  margin: 0 3px;
+}
+
+.rich-editor-surface {
+  min-height: 320px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 0 0 10px 10px;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.75;
+  outline: none;
+}
+
+.rich-editor-surface:focus {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16);
+}
+
+.rich-editor-surface:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.rich-editor-surface h2 {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  margin: 18px 0 8px;
+}
+
+.rich-editor-surface h3 {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  margin: 14px 0 6px;
+}
+
+.rich-editor-surface p {
+  margin: 0 0 12px;
+}
+
+.rich-editor-surface ul, .rich-editor-surface ol {
+  margin: 0 0 14px;
+  padding-left: 24px;
+}
+
+.rich-editor-surface blockquote.article-callout {
+  margin: 14px 0;
+}
+
+#rich-editor-wrapper.expanded {
+  position: fixed;
+  inset: 18px;
+  z-index: 2200;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+
+#rich-editor-wrapper.expanded .rich-editor-surface {
+  flex: 1;
+  max-height: none;
+}
+
+.manage-posts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.manage-posts-header h4 {
+  margin: 0;
+}
+
+.manage-search-box {
+  flex: 1;
+  min-width: 220px;
+  max-width: 340px;
+}
+
+.manage-search-box input {
+  width: 100%;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.manage-search-box input:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.manage-posts-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.article-body blockquote.article-callout {
+  margin: 22px 0;
+}

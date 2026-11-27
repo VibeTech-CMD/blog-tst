@@ -128,11 +128,8 @@
             <p class="section-sub">Clique em qualquer publicação para abrir em uma página de leitura limpa.</p>
           </div>
 
-          <div class="category-tabs" role="tablist" aria-label="Filtrar por área">
+          <div id="home-category-tabs" class="category-tabs" role="tablist" aria-label="Filtrar por área">
             <button type="button" class="cat-tab active" data-category="all">Todas as Áreas</button>
-            <button type="button" class="cat-tab" data-category="offshore">Offshore (NR-37)</button>
-            <button type="button" class="cat-tab" data-category="onshore">Onshore &amp; Indústria</button>
-            <button type="button" class="cat-tab" data-category="nrs">NRs &amp; Legislação</button>
           </div>
 
           <div id="feed-status" class="feed-status" hidden></div>
@@ -353,12 +350,15 @@
                 <input type="text" id="ed-title" name="title" placeholder="Ex: Cuidados na Liberação de Trabalho em Altura (NR-35)" required />
               </div>
               <div class="form-group">
-                <label for="ed-category">Área Principal</label>
-                <select id="ed-category" name="category" required>
-                  <option value="offshore">Offshore (NR-37)</option>
-                  <option value="onshore">Onshore &amp; Indústria</option>
-                  <option value="nrs">NRs &amp; Legislação</option>
-                </select>
+                <label for="ed-category">Área Principal (ou adicione uma nova)</label>
+                <div class="category-select-row">
+                  <select id="ed-category" name="category" required></select>
+                  <button type="button" id="toggle-new-cat-btn" class="btn btn-outline-dark btn-sm" title="Adicionar nova área temática">+ Nova Área</button>
+                </div>
+                <div id="new-category-row" class="new-category-row" hidden>
+                  <input type="text" id="new-category-input" placeholder="Ex: Higiene Ocupacional, NR-10, Prevenção de Incêndio..." />
+                  <button type="button" id="save-new-cat-btn" class="btn btn-primary btn-sm">Adicionar</button>
+                </div>
               </div>
             </div>
             <div class="form-group" style="margin-top:10px">
@@ -379,15 +379,28 @@
             </div>
           </div>
 
-          <div class="easy-step-box">
-            <label class="easy-step-title">4. Texto Completo</label>
-            <div class="easy-toolbar">
-              <button type="button" class="tool-chip" data-insert="subtitle">+ Subtítulo</button>
-              <button type="button" class="tool-chip" data-insert="bold">Negrito</button>
-              <button type="button" class="tool-chip" data-insert="callout">+ Caixa de Destaque</button>
-              <button type="button" class="tool-chip" data-insert="checklist">+ Lista de Verificação</button>
+          <div class="easy-step-box" id="rich-editor-wrapper">
+            <div class="rich-editor-head">
+              <label class="easy-step-title" style="margin:0">4. Texto Completo (selecione o texto e use os botões como no Word — ou cole de qualquer documento)</label>
+              <button type="button" id="toggle-expand-editor" class="tool-chip" title="Expandir área de escrita">⤢ Ampliar Tela</button>
             </div>
-            <textarea id="ed-body" name="body" rows="6" placeholder="Escreva seu texto normalmente aqui. Dê dois Enter para separar parágrafos." required></textarea>
+            <div class="word-toolbar" role="toolbar" aria-label="Formatação de texto estilo Word">
+              <button type="button" class="word-btn" data-cmd="bold" title="Negrito (Ctrl+B)"><strong>B</strong></button>
+              <button type="button" class="word-btn" data-cmd="italic" title="Itálico (Ctrl+I)"><em>I</em></button>
+              <button type="button" class="word-btn" data-cmd="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
+              <span class="word-sep"></span>
+              <button type="button" class="word-btn" data-format-block="H2" title="Transformar em Subtítulo">Subtítulo</button>
+              <button type="button" class="word-btn" data-format-block="P" title="Texto normal">Normal</button>
+              <span class="word-sep"></span>
+              <button type="button" class="word-btn" data-cmd="insertUnorderedList" title="Lista com marcadores">• Lista</button>
+              <button type="button" class="word-btn" data-cmd="insertOrderedList" title="Lista numerada">1. Lista</button>
+              <button type="button" class="word-btn" data-insert-callout="1" title="Transformar em caixa de destaque">❝ Destaque</button>
+              <span class="word-sep"></span>
+              <button type="button" class="word-btn" data-cmd="removeFormat" title="Limpar formatação">Limpar</button>
+              <button type="button" class="word-btn" data-cmd="undo" title="Desfazer">↶</button>
+              <button type="button" class="word-btn" data-cmd="redo" title="Refazer">↷</button>
+            </div>
+            <div id="ed-rich-body" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Escreva aqui ou cole seu texto pronto do Word, Google Docs ou WhatsApp. Selecione qualquer trecho e clique em B para deixar em negrito..."></div>
           </div>
 
           <div class="editor-actions">
@@ -397,8 +410,13 @@
         </form>
 
         <div class="manage-posts-box">
-          <h4>Publicações Anteriores (edite o texto, substitua a capa ou remova)</h4>
-          <div id="manage-posts-list" class="manage-posts-list"></div>
+          <div class="manage-posts-header">
+            <h4>Publicações Anteriores (<span id="manage-posts-count">0</span>)</h4>
+            <div class="manage-search-box">
+              <input type="search" id="manage-posts-search" placeholder="🔍 Pesquisar por título, data ou área..." aria-label="Pesquisar publicações anteriores" />
+            </div>
+          </div>
+          <div id="manage-posts-list" class="manage-posts-list manage-posts-scroll"></div>
         </div>
       </div>
 

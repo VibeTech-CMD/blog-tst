@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, loadAllPosts, loadProfile, calculateReadTime } from "./data.js";
+import { STORAGE_KEYS, loadAllPosts, loadProfile, calculateReadTime, sanitizeRichHtml } from "./data.js";
 
 function escapeHtml(str = "") {
   return String(str)
@@ -91,31 +91,45 @@ function renderStandaloneArticle() {
   img.alt = post.title;
   document.getElementById("art-image-caption").textContent = post.imageCaption || "";
 
-  const bodyChunks = [];
-  (post.content || []).forEach((block, idx) => {
-    if (block.type === "h2") {
-      bodyChunks.push(`<h2>${escapeHtml(block.text)}</h2>`);
-    } else if (block.type === "callout") {
-      bodyChunks.push(`<div class="article-callout"><strong>${escapeHtml(block.title || "Destaque")}</strong><span>${escapeHtml(block.text)}</span></div>`);
-    } else if (block.type === "checklist") {
-      const items = (block.items || []).map((i) => `<li>${escapeHtml(i)}</li>`).join("");
-      bodyChunks.push(`<div class="article-checklist"><h3>${escapeHtml(block.title || "Lista de Verificação")}</h3><ul>${items}</ul></div>`);
-    } else {
-      const formatted = escapeHtml(block.text || "").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-      bodyChunks.push(`<p>${formatted}</p>`);
-    }
+  const inArticleAdHtml = `
+    <aside class="ad-slot ad-google-clean ad-in-article" data-ad-slot="in-article" aria-label="Publicidade Google Ads">
+      <div class="ad-badge">GOOGLE ADS • ESPAÇO IN-ARTICLE (TEMAS SST &amp; INDÚSTRIA)</div>
+      <div class="ad-placeholder-clean">Espaço reservado para anúncio contextual do Google Ads relacionado ao tema deste artigo.</div>
+    </aside>
+  `;
 
-    // Espaço pré-definido Google Ads In-Article (após o 2º bloco)
-    if (idx === 1) {
-      bodyChunks.push(`
-        <aside class="ad-slot ad-google-clean ad-in-article" data-ad-slot="in-article" aria-label="Publicidade Google Ads">
-          <div class="ad-badge">GOOGLE ADS • ESPAÇO IN-ARTICLE (TEMAS SST &amp; INDÚSTRIA)</div>
-          <div class="ad-placeholder-clean">Espaço reservado para anúncio contextual do Google Ads relacionado ao tema deste artigo.</div>
-        </aside>
-      `);
+  if (post.contentHtml) {
+    const clean = sanitizeRichHtml(post.contentHtml);
+    const holder = document.createElement("div");
+    holder.innerHTML = clean;
+    const children = Array.from(holder.children);
+    if (children.length >= 2) {
+      const adWrap = document.createElement("div");
+      adWrap.innerHTML = inArticleAdHtml.trim();
+      children[1].insertAdjacentElement("afterend", adWrap.firstElementChild);
     }
-  });
-  document.getElementById("art-body").innerHTML = bodyChunks.join("");
+    document.getElementById("art-body").innerHTML = holder.innerHTML;
+  } else {
+    const bodyChunks = [];
+    (post.content || []).forEach((block, idx) => {
+      if (block.type === "h2") {
+        bodyChunks.push(`<h2>${escapeHtml(block.text)}</h2>`);
+      } else if (block.type === "callout") {
+        bodyChunks.push(`<div class="article-callout"><strong>${escapeHtml(block.title || "Destaque")}</strong><span>${escapeHtml(block.text)}</span></div>`);
+      } else if (block.type === "checklist") {
+        const items = (block.items || []).map((i) => `<li>${escapeHtml(i)}</li>`).join("");
+        bodyChunks.push(`<div class="article-checklist"><h3>${escapeHtml(block.title || "Lista de Verificação")}</h3><ul>${items}</ul></div>`);
+      } else {
+        const formatted = escapeHtml(block.text || "").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+        bodyChunks.push(`<p>${formatted}</p>`);
+      }
+
+      if (idx === 1) {
+        bodyChunks.push(inArticleAdHtml);
+      }
+    });
+    document.getElementById("art-body").innerHTML = bodyChunks.join("");
+  }
 
   // Relacionados (abrem na própria página independente)
   const related = posts.filter((p) => p.slug !== post.slug).slice(0, 2);
