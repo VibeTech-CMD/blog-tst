@@ -1,44 +1,37 @@
-import { SITE_CONFIG, DEFAULT_POSTS } from "./data.js";
-import { AutoReader } from "./tts.js";
 import {
-  loadDdsKits,
-  saveDdsKits,
-  loadAiConfig,
-  saveAiConfig,
-  generateAiDdsDraft,
-  formatDdsForWhatsApp,
-  printDdsCard,
-  addSubscriber,
-  getSubscriberCount
-} from "./dds-hub.js";
-
-const STORAGE_KEY_POSTS = "cleilson_tst_custom_posts_v1";
-const STORAGE_KEY_THEME = "cleilson_tst_theme_v1";
+  STORAGE_KEYS,
+  SITE_CONFIG,
+  loadAllPosts,
+  saveCustomPost,
+  deletePostById,
+  loadImageBank,
+  saveImageBank,
+  loadInstagramConfig,
+  saveInstagramConfig,
+  loadAnalyticsConfig,
+  saveAnalyticsConfig,
+  calculateReadTime,
+  computeRealMetrics
+} from "./data.js";
 
 const state = {
   posts: [],
-  ddsKits: [],
-  ddsArea: "all",
-  activeDdsModal: null,
+  imageBank: [],
   category: "all",
-  format: "all",
+  imageFilter: "all",
   search: "",
-  currentPost: null
+  pendingBankImageDataUrl: "",
+  activeLightboxItem: null
 };
 
 const els = {
   readingProgress: document.getElementById("reading-progress"),
-  homeView: document.getElementById("home-view"),
-  articleView: document.getElementById("article-view"),
   heroFeatured: document.getElementById("hero-featured"),
-  sponsorName: document.getElementById("sponsor-name"),
-  sponsorHeadline: document.getElementById("sponsor-headline"),
-  sponsorCta: document.getElementById("sponsor-cta"),
   postsGrid: document.getElementById("posts-grid"),
   feedStatus: document.getElementById("feed-status"),
-  trendingList: document.getElementById("trending-list"),
-  shortsGrid: document.getElementById("shorts-grid"),
-  infographicsGrid: document.getElementById("infographics-grid"),
+  recentList: document.getElementById("recent-list"),
+  instagramStatusBar: document.getElementById("instagram-status-bar"),
+  imageBankGrid: document.getElementById("image-bank-grid"),
   aboutBioText: document.getElementById("about-bio-text"),
   aboutStats: document.getElementById("about-stats"),
   searchInput: document.getElementById("search-input"),
@@ -46,145 +39,50 @@ const els = {
   mobileMenuBtn: document.getElementById("mobile-menu-btn"),
   mainNav: document.getElementById("main-nav"),
 
-  // Central de Kits de DDS
-  ddsKitsGrid: document.getElementById("dds-kits-grid"),
-  pendingDdsBadge: document.getElementById("pending-dds-badge"),
-  studioPendingCount: document.getElementById("studio-pending-count"),
-  ddsSubCounter: document.getElementById("dds-sub-counter"),
-  pendingDdsList: document.getElementById("pending-dds-list"),
-  aiTopicInput: document.getElementById("ai-topic-input"),
-  generateAiDdsBtn: document.getElementById("generate-ai-dds-btn"),
-  exportDdsJsonBtn: document.getElementById("export-dds-json-btn"),
-  ddsReaderModal: document.getElementById("dds-reader-modal"),
-  ddsModalBadge: document.getElementById("dds-modal-badge"),
-  ddsModalTitle: document.getElementById("dds-modal-title"),
-  ddsModalContent: document.getElementById("dds-modal-content"),
-  ddsModalListen: document.getElementById("dds-modal-listen"),
-  ddsModalWhatsapp: document.getElementById("dds-modal-whatsapp"),
-  ddsModalPrint: document.getElementById("dds-modal-print"),
-
-  // Article view
-  backToHome: document.getElementById("back-to-home"),
-  artCategoryBadge: document.getElementById("art-category-badge"),
-  artTitle: document.getElementById("art-title"),
-  artSubtitle: document.getElementById("art-subtitle"),
-  artMetaDetails: document.getElementById("art-meta-details"),
-  artSummaryList: document.getElementById("art-summary-list"),
-  artPracticalTip: document.getElementById("art-practical-tip"),
-  artImage: document.getElementById("art-image"),
-  artImageCaption: document.getElementById("art-image-caption"),
-  artBody: document.getElementById("art-body"),
-  relatedGrid: document.getElementById("related-grid"),
-  shareWhatsapp: document.getElementById("share-whatsapp"),
-  shareLinkedin: document.getElementById("share-linkedin"),
-  shareCopy: document.getElementById("share-copy"),
-
-  // TTS Player
-  ttsWaveBadge: document.getElementById("tts-wave-badge"),
-  ttsEnginePill: document.getElementById("tts-engine-pill"),
-  ttsStatusText: document.getElementById("tts-status-text"),
-  ttsPlaySummary: document.getElementById("tts-play-summary"),
-  ttsPlayFull: document.getElementById("tts-play-full"),
-  ttsTogglePause: document.getElementById("tts-toggle-pause"),
-  ttsStop: document.getElementById("tts-stop"),
-  ttsProgressFill: document.getElementById("tts-progress-fill"),
-  ttsProgressLabel: document.getElementById("tts-progress-label"),
-  ttsRate: document.getElementById("tts-rate"),
-  ttsVoice: document.getElementById("tts-voice"),
-
-  // Modais e Formulários
+  // Editor Intuitivo
   editorModal: document.getElementById("editor-modal"),
-  privacyModal: document.getElementById("privacy-modal"),
   editorForm: document.getElementById("editor-form"),
-  voiceAiConfigForm: document.getElementById("voice-ai-config-form"),
-  exportJsonBtn: document.getElementById("export-json-btn"),
+  edId: document.getElementById("ed-id"),
+  edTitle: document.getElementById("ed-title"),
+  edCategory: document.getElementById("ed-category"),
+  edSubtitle: document.getElementById("ed-subtitle"),
+  edSummary: document.getElementById("ed-summary"),
+  edTip: document.getElementById("ed-tip"),
+  edBody: document.getElementById("ed-body"),
+  edImageValue: document.getElementById("ed-image-value"),
+  edCoverUpload: document.getElementById("ed-cover-upload"),
+  coverThumbnails: document.getElementById("cover-thumbnails"),
+  coverPreviewImg: document.getElementById("cover-preview-img"),
+  coverPreviewLabel: document.getElementById("cover-preview-label"),
+  edCancelEdit: document.getElementById("ed-cancel-edit"),
+  edSubmitBtn: document.getElementById("ed-submit-btn"),
+  managePostsList: document.getElementById("manage-posts-list"),
+
+  // Banco de Imagens
+  imageBankForm: document.getElementById("image-bank-form"),
+  bankFileInput: document.getElementById("bank-file-input"),
+  bankDropzone: document.getElementById("bank-dropzone"),
+  bankFilePreview: document.getElementById("bank-file-preview"),
+  bankPreviewImg: document.getElementById("bank-preview-img"),
+  manageImagesList: document.getElementById("manage-images-list"),
+
+  // Instagram & Analytics
+  instagramConfigForm: document.getElementById("instagram-config-form"),
+  syncInstagramBtn: document.getElementById("sync-instagram-btn"),
+  analyticsConfigForm: document.getElementById("analytics-config-form"),
+
+  // Lightbox & Privacidade
+  lightboxModal: document.getElementById("image-lightbox-modal"),
+  lightboxTag: document.getElementById("lightbox-tag"),
+  lightboxTitle: document.getElementById("lightbox-title"),
+  lightboxImg: document.getElementById("lightbox-img"),
+  lightboxCaption: document.getElementById("lightbox-caption"),
+  lbShareWa: document.getElementById("lb-share-wa"),
+  lbCopyIg: document.getElementById("lb-copy-ig"),
+  lbDownload: document.getElementById("lb-download"),
+  privacyModal: document.getElementById("privacy-modal"),
   toast: document.getElementById("toast")
 };
-
-// =========================================================================
-// MOTOR DE AUTO-LEITURA HUMANIZADA (TTS)
-// =========================================================================
-let highlightedEl = null;
-
-const reader = new AutoReader({
-  onVoicesLoaded: (voices, selectedURI, isHighQuality) => {
-    if (!els.ttsVoice) return;
-    if (voices.length === 0) {
-      els.ttsVoice.innerHTML = `<option value="">Voz PT-BR padrão</option>`;
-      return;
-    }
-    els.ttsVoice.innerHTML = voices
-      .map((v) => {
-        const tag = /natural|neural|online|google/i.test(v.name) ? "★ " : "";
-        return `<option value="${escapeHtml(v.voiceURI)}" ${v.voiceURI === selectedURI ? "selected" : ""}>${tag}${escapeHtml(v.name)}</option>`;
-      })
-      .join("");
-
-    if (!reader.getNeuralConfig().apiKey && els.ttsEnginePill) {
-      els.ttsEnginePill.textContent = isHighQuality ? "★ Voz Natural HD" : "Prosódia SST • Dica: Voz HD";
-    }
-  },
-  onStateChange: ({ supported, isPlaying, isPaused, mode, engine, hasNeuralConfigured }) => {
-    if (!supported) {
-      els.ttsStatusText.textContent = "Seu navegador não suporta áudio nativo. Configure Voz Neural HD em ⚙ Voz HD.";
-      return;
-    }
-
-    if (els.ttsEnginePill) {
-      if (hasNeuralConfigured || engine === "openai" || engine === "elevenlabs") {
-        els.ttsEnginePill.textContent = "✨ Voz Neural HD (IA)";
-      }
-    }
-
-    els.ttsTogglePause.disabled = !isPlaying;
-    els.ttsStop.disabled = !isPlaying;
-    els.ttsTogglePause.textContent = isPaused ? "Retomar" : "Pausar";
-
-    if (isPlaying && !isPaused) {
-      els.ttsWaveBadge.classList.add("playing");
-      els.ttsStatusText.textContent =
-        mode === "summary"
-          ? "Narrando o Resumo Executivo com ritmo fluido..."
-          : mode === "dds"
-          ? "Narrando Kit de DDS em voz humanizada..."
-          : "Narrando o conteúdo completo com pausas naturais...";
-    } else if (isPlaying && isPaused) {
-      els.ttsWaveBadge.classList.remove("playing");
-      els.ttsStatusText.textContent = "Auto-leitura pausada.";
-    } else {
-      els.ttsWaveBadge.classList.remove("playing");
-      els.ttsStatusText.textContent = "Com pronúncia técnica de SST e pausas naturais. Aperte o play para ouvir!";
-      els.ttsProgressFill.style.width = "0%";
-      els.ttsProgressLabel.textContent = "Pronto";
-    }
-  },
-  onProgress: (current, total) => {
-    if (!total) {
-      els.ttsProgressFill.style.width = "0%";
-      els.ttsProgressLabel.textContent = "Pronto";
-      return;
-    }
-    const pct = Math.min(100, Math.round((current / total) * 100));
-    els.ttsProgressFill.style.width = `${pct}%`;
-    els.ttsProgressLabel.textContent = `${pct}%`;
-  },
-  onHighlight: (elementId) => {
-    if (highlightedEl) {
-      highlightedEl.classList.remove("tts-reading-active");
-      highlightedEl = null;
-    }
-    if (!elementId) return;
-    const target = document.getElementById(elementId);
-    if (target) {
-      target.classList.add("tts-reading-active");
-      highlightedEl = target;
-      const rect = target.getBoundingClientRect();
-      if (rect.top < 110 || rect.bottom > window.innerHeight - 80) {
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }
-  }
-});
 
 // =========================================================================
 // UTILITÁRIOS
@@ -203,88 +101,144 @@ function showToast(message) {
   clearTimeout(showToast._timer);
   showToast._timer = setTimeout(() => {
     els.toast.hidden = true;
-  }, 3800);
+  }, 3600);
 }
 
-function formatTypeBadge(type) {
-  if (type === "video") return "▶ Vídeo Curto";
-  if (type === "image") return "🖼 Infográfico";
-  return "📄 Artigo";
+function articleUrl(slug) {
+  return `artigo.html?post=${encodeURIComponent(slug)}`;
 }
 
-function loadPosts() {
-  let custom = [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_POSTS);
-    if (raw) custom = JSON.parse(raw);
-  } catch {
-    custom = [];
-  }
-  state.posts = [...custom, ...DEFAULT_POSTS];
+/**
+ * Converte imagem enviada pelo usuário em JPEG leve (max 1200px) para salvar rápido e sem travar
+ */
+function readAndCompressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 1200;
+        const scale = img.width > maxW ? maxW / img.width : 1;
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = () => resolve(reader.result);
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
-function saveCustomPost(newPost) {
-  let custom = [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_POSTS);
-    if (raw) custom = JSON.parse(raw);
-  } catch {
-    custom = [];
-  }
-  custom.unshift(newPost);
-  localStorage.setItem(STORAGE_KEY_POSTS, JSON.stringify(custom));
-  loadPosts();
+// Converte texto do editor fácil em blocos estruturados
+function parseEasyEditorBody(rawText) {
+  const chunks = String(rawText)
+    .split(/\n\s*\n/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+
+  return chunks.map((chunk) => {
+    if (chunk.startsWith("## ")) {
+      return { type: "h2", text: chunk.replace(/^##\s+/, "").trim() };
+    }
+    if (chunk.startsWith("DESTAQUE:")) {
+      return { type: "callout", title: "Destaque do Cleilson", text: chunk.replace(/^DESTAQUE:\s*/i, "").trim() };
+    }
+    if (chunk.split("\n").every((line) => /^[-•*]\s+/.test(line.trim()))) {
+      return {
+        type: "checklist",
+        title: "Pontos de Verificação",
+        items: chunk.split("\n").map((line) => line.replace(/^[-•*]\s+/, "").trim())
+      };
+    }
+    return { type: "p", text: chunk };
+  });
+}
+
+function serializeBlocksToEasyText(blocks = []) {
+  return blocks
+    .map((b) => {
+      if (b.type === "h2") return `## ${b.text}`;
+      if (b.type === "callout") return `DESTAQUE: ${b.text}`;
+      if (b.type === "checklist") return (b.items || []).map((i) => `- ${i}`).join("\n");
+      return b.text || "";
+    })
+    .join("\n\n");
 }
 
 // =========================================================================
-// RENDERIZAÇÃO DA HOME & CENTRAL DE KITS DE DDS
+// RENDERIZAÇÃO PRINCIPAL (SEM NÚMEROS FALSOS)
 // =========================================================================
-function renderStaticBranding() {
-  els.sponsorName.textContent = SITE_CONFIG.sponsor.name;
-  els.sponsorHeadline.textContent = SITE_CONFIG.sponsor.headline;
-  els.sponsorCta.textContent = SITE_CONFIG.sponsor.ctaText;
+function renderRealIndicators() {
   els.aboutBioText.textContent = SITE_CONFIG.author.bio;
-  els.aboutStats.innerHTML = SITE_CONFIG.author.stats
+  const m = computeRealMetrics(state.posts, state.imageBank);
+
+  const cards = [
+    {
+      value: String(m.totalMaterials),
+      label: `Conteúdos Publicados (${m.articlesCount} ${m.articlesCount === 1 ? "artigo" : "artigos"} • ${m.visualsCount} ${m.visualsCount === 1 ? "imagem" : "imagens"})`
+    }
+  ];
+
+  // Regra estrita: Leitores Mensais só aparece após atingir >= 500 leitores reais
+  if (m.showMonthlyReaders) {
+    cards.push({
+      value: m.monthlyReaders.toLocaleString("pt-BR"),
+      label: "Leitores Mensais Verificados"
+    });
+  }
+
+  cards.push({
+    value: m.specialties.length > 0 ? m.specialties.join(" • ") : "Em construção",
+    label: "Especialidades (baseadas nos textos publicados)"
+  });
+
+  els.aboutStats.style.gridTemplateColumns = `repeat(${cards.length}, minmax(0, 1fr))`;
+  els.aboutStats.innerHTML = cards
     .map(
-      (s) => `
+      (c) => `
       <div class="stat-card">
-        <strong>${escapeHtml(s.value)}</strong>
-        <span>${escapeHtml(s.label)}</span>
+        <strong>${escapeHtml(c.value)}</strong>
+        <span>${escapeHtml(c.label)}</span>
       </div>`
     )
     .join("");
-  if (els.ddsSubCounter) {
-    els.ddsSubCounter.textContent = getSubscriberCount().toLocaleString("pt-BR");
-  }
 }
 
 function renderHero() {
   const featured = state.posts.find((p) => p.featured) || state.posts[0];
-  if (!featured) return;
+  if (!featured) {
+    els.heroFeatured.innerHTML = `<div style="padding:36px">Nenhuma publicação disponível ainda. Use a Área do Editor para publicar seu primeiro texto.</div>`;
+    return;
+  }
+
+  const href = articleUrl(featured.slug);
+  const readTime = calculateReadTime(featured);
 
   els.heroFeatured.innerHTML = `
-    <div class="hero-media" data-open-slug="${escapeHtml(featured.slug)}">
+    <a href="${href}" target="_blank" rel="noopener" class="hero-media">
       <img src="${escapeHtml(featured.image)}" alt="${escapeHtml(featured.title)}" />
       <div class="hero-media-badges">
         <span class="badge-amber">${escapeHtml(featured.badge || "Destaque")}</span>
         <span class="badge-dark">${escapeHtml(featured.categoryLabel)}</span>
       </div>
-    </div>
+    </a>
     <div class="hero-content">
       <div class="hero-meta">
         <span>Por <strong>Cleilson</strong></span>
         <span>•</span>
         <span>${escapeHtml(featured.date)}</span>
         <span>•</span>
-        <span>${escapeHtml(featured.readTime)}</span>
-        <span>•</span>
-        <span>🔊 ${escapeHtml(featured.audioDuration || "Com Auto-Leitura")}</span>
+        <span>${escapeHtml(readTime)}</span>
       </div>
-      <h1 data-open-slug="${escapeHtml(featured.slug)}">${escapeHtml(featured.title)}</h1>
+      <h1><a href="${href}" target="_blank" rel="noopener">${escapeHtml(featured.title)}</a></h1>
       <p>${escapeHtml(featured.subtitle)}</p>
       <div class="hero-actions">
-        <button type="button" class="btn btn-primary" data-open-slug="${escapeHtml(featured.slug)}">Ler Artigo + Resumo</button>
-        <button type="button" class="btn btn-dark" data-listen-slug="${escapeHtml(featured.slug)}">🔊 Ouvir Agora (Áudio)</button>
+        <a href="${href}" target="_blank" rel="noopener" class="btn btn-primary">Abrir Leitura Completa ↗</a>
       </div>
     </div>
   `;
@@ -294,16 +248,15 @@ function renderFeed() {
   const q = state.search.trim().toLowerCase();
   const filtered = state.posts.filter((post) => {
     const matchCat = state.category === "all" || post.category === state.category;
-    const matchFmt = state.format === "all" || post.type === state.format;
     const matchSearch =
       !q ||
       post.title.toLowerCase().includes(q) ||
       post.subtitle.toLowerCase().includes(q) ||
       post.categoryLabel.toLowerCase().includes(q);
-    return matchCat && matchFmt && matchSearch;
+    return matchCat && matchSearch;
   });
 
-  if (q || state.category !== "all" || state.format !== "all") {
+  if (q || state.category !== "all") {
     els.feedStatus.hidden = false;
     els.feedStatus.textContent = `Exibindo ${filtered.length} publicação(ões) encontrada(s).`;
   } else {
@@ -314,382 +267,194 @@ function renderFeed() {
     els.postsGrid.innerHTML = `
       <div class="sidebar-card" style="grid-column: 1 / -1; text-align:center; padding: 36px;">
         <h3>Nenhuma publicação encontrada</h3>
-        <p style="color:var(--text-muted)">Tente limpar o filtro ou buscar por termos como "NR-37", "Offshore", "LOTO" ou "DDS".</p>
+        <p style="color:var(--text-muted)">Limpe o filtro ou busque por termos como "NR-37", "Offshore", "NR-35" ou "NR-33".</p>
       </div>`;
     return;
   }
 
-  const cardsHtml = [];
-  filtered.forEach((post, idx) => {
-    cardsHtml.push(`
+  els.postsGrid.innerHTML = filtered
+    .map((post) => {
+      const href = articleUrl(post.slug);
+      const readTime = calculateReadTime(post);
+      return `
       <article class="post-card">
-        <div class="post-card-media" data-open-slug="${escapeHtml(post.slug)}">
+        <a href="${href}" target="_blank" rel="noopener" class="post-card-media">
           <img src="${escapeHtml(post.image)}" alt="${escapeHtml(post.title)}" loading="lazy" />
-          <span class="card-type-pill">${formatTypeBadge(post.type)}</span>
-          <span class="card-audio-pill">🔊 Auto-Leitura</span>
-        </div>
+          <span class="card-type-pill">📄 Artigo Técnico</span>
+        </a>
         <div class="post-card-body">
           <div class="post-card-meta">
             <span class="post-card-cat">${escapeHtml(post.categoryLabel)}</span>
-            <span>${escapeHtml(post.readTime)}</span>
+            <span>${escapeHtml(readTime)}</span>
           </div>
-          <h3 class="post-card-title" data-open-slug="${escapeHtml(post.slug)}">${escapeHtml(post.title)}</h3>
+          <h3 class="post-card-title"><a href="${href}" target="_blank" rel="noopener">${escapeHtml(post.title)}</a></h3>
           <p class="post-card-excerpt">${escapeHtml(post.subtitle)}</p>
           <div class="post-card-footer">
-            <button type="button" class="card-action-link" data-open-slug="${escapeHtml(post.slug)}">Ler + Resumo 30s →</button>
-            <button type="button" class="card-listen-btn" data-listen-slug="${escapeHtml(post.slug)}">▶ Ouvir</button>
+            <a href="${href}" target="_blank" rel="noopener" class="card-action-link">Ler em nova aba (Resumo + Texto) ↗</a>
           </div>
         </div>
-      </article>
-    `);
-
-    if (idx === 1) {
-      cardsHtml.push(`
-        <aside class="ad-infeed" aria-label="Publicidade no feed">
-          <div>
-            <div class="ad-badge">PUBLICIDADE IN-FEED • ADSENSE / PATROCINADOR</div>
-            <h4>Precisa equipar sua equipe com EPIs certificados ou treinar NRs?</h4>
-            <p>Espaço nativo de altíssimo CTR posicionado entre os artigos mais acessados do portal.</p>
-          </div>
-          <a href="#anuncie" class="btn btn-primary btn-sm">Anunciar Aqui</a>
-        </aside>
-      `);
-    }
-  });
-
-  els.postsGrid.innerHTML = cardsHtml.join("");
-}
-
-function renderDdsHub() {
-  const approved = state.ddsKits.filter((k) => k.status === "approved");
-  const pending = state.ddsKits.filter((k) => k.status === "pending_validation");
-
-  if (els.pendingDdsBadge) els.pendingDdsBadge.textContent = pending.length;
-  if (els.studioPendingCount) els.studioPendingCount.textContent = pending.length;
-
-  const visible = approved.filter((k) => state.ddsArea === "all" || k.area === state.ddsArea);
-
-  els.ddsKitsGrid.innerHTML = visible
-    .map(
-      (dds) => `
-      <article class="dds-kit-card">
-        <div class="dds-kit-top">
-          <span class="badge-cat">${escapeHtml(dds.areaLabel)}</span>
-          <span class="dds-verified-pill">✓ Validado por ${escapeHtml(dds.validatedBy || "Cleilson TST")}</span>
-        </div>
-        <h3>${escapeHtml(dds.title)}</h3>
-        <p class="dds-kit-summary">${escapeHtml(dds.summary)}</p>
-        <div class="dds-kit-meta">
-          <span>📋 Norma: <strong>${escapeHtml(dds.norm)}</strong></span>
-          <span>⏱ ${escapeHtml(dds.duration)}</span>
-        </div>
-        <div class="dds-kit-actions">
-          <button type="button" class="btn btn-primary btn-sm" data-open-dds="${escapeHtml(dds.id)}">Abrir Roteiro + Checklist</button>
-          <button type="button" class="btn btn-dark btn-sm" data-listen-dds="${escapeHtml(dds.id)}">🔊 Ouvir</button>
-          <button type="button" class="card-listen-btn" data-wa-dds="${escapeHtml(dds.id)}" title="Copiar para WhatsApp">WhatsApp</button>
-          <button type="button" class="card-listen-btn" data-pdf-dds="${escapeHtml(dds.id)}" title="Imprimir ou Salvar PDF">PDF</button>
-        </div>
-      </article>`
-    )
+      </article>`;
+    })
     .join("");
 }
 
-function renderPendingDdsQueue() {
-  const pending = state.ddsKits.filter((k) => k.status === "pending_validation");
-  if (els.pendingDdsBadge) els.pendingDdsBadge.textContent = pending.length;
-  if (els.studioPendingCount) els.studioPendingCount.textContent = pending.length;
-
-  if (pending.length === 0) {
-    els.pendingDdsList.innerHTML = `
-      <div class="pending-empty">
-        <strong>Tudo validado! 🎉</strong>
-        <p>Nenhum DDS aguardando revisão. Clique em <strong>"Pesquisar &amp; Gerar DDS com IA"</strong> acima para criar novos rascunhos para a próxima segunda-feira.</p>
-      </div>`;
-    return;
-  }
-
-  els.pendingDdsList.innerHTML = pending
-    .map(
-      (dds) => `
-      <div class="pending-dds-card" data-pending-id="${escapeHtml(dds.id)}">
-        <div class="pending-card-head">
-          <span class="pill-pending">AGUARDANDO VALIDAÇÃO DO CLEILSON</span>
-          <span class="pending-source">${escapeHtml(dds.trendSource)}</span>
-        </div>
-        <div class="form-row-2" style="margin-top:10px">
-          <div class="form-group">
-            <label>Título do DDS (editável)</label>
-            <input type="text" class="pend-title" value="${escapeHtml(dds.title)}" />
-          </div>
-          <div class="form-group">
-            <label>Norma / Referência</label>
-            <input type="text" class="pend-norm" value="${escapeHtml(dds.norm)}" />
-          </div>
-        </div>
-        <div class="form-group" style="margin-top:8px">
-          <label>Resumo Executivo</label>
-          <textarea class="pend-summary" rows="2">${escapeHtml(dds.summary)}</textarea>
-        </div>
-        <div class="form-group" style="margin-top:8px">
-          <label>Roteiro de 5 Minutos (separe parágrafos com linha em branco)</label>
-          <textarea class="pend-script" rows="4">${escapeHtml((dds.script || []).join("\n\n"))}</textarea>
-        </div>
-        <div class="form-group" style="margin-top:8px">
-          <label>Checklist de Campo (um item por linha)</label>
-          <textarea class="pend-checklist" rows="3">${escapeHtml((dds.checklist || []).join("\n"))}</textarea>
-        </div>
-        <div class="pending-card-actions">
-          <button type="button" class="btn btn-outline-dark btn-sm" data-reject-dds="${escapeHtml(dds.id)}">Descartar</button>
-          <button type="button" class="btn btn-primary btn-sm" data-approve-dds="${escapeHtml(dds.id)}">✓ Validar Tecnicamente e Liberar p/ Segunda-feira</button>
-        </div>
-      </div>`
-    )
-    .join("");
-}
-
-function openDdsModal(ddsId) {
-  const dds = state.ddsKits.find((k) => k.id === ddsId);
-  if (!dds) return;
-  state.activeDdsModal = dds;
-
-  els.ddsModalBadge.textContent = `${dds.areaLabel} • ${dds.norm} • Validado por ${dds.validatedBy || "Cleilson TST"}`;
-  els.ddsModalTitle.textContent = dds.title;
-  els.ddsModalContent.innerHTML = `
-    <div class="summary-box" style="margin-bottom:16px">
-      <span class="summary-pill">RESUMO RÁPIDO (30s)</span>
-      <p style="margin:6px 0 0">${escapeHtml(dds.summary)}</p>
-    </div>
-    <h4>Roteiro de 5 Minutos para o Turno</h4>
-    ${(dds.script || []).map((p, i) => `<p id="dds-line-${i}">${escapeHtml(p)}</p>`).join("")}
-    <h4>Perguntas de Engajamento para a Equipe</h4>
-    <ol>${(dds.questions || []).map((q) => `<li>${escapeHtml(q)}</li>`).join("")}</ol>
-    <div class="article-checklist" style="margin:14px 0 0">
-      <h3>Checklist Rápido de Campo</h3>
-      <ul>${(dds.checklist || []).map((c) => `<li>${escapeHtml(c)}</li>`).join("")}</ul>
-    </div>
-  `;
-  els.ddsReaderModal.hidden = false;
-}
-
-function listenToDds(ddsId) {
-  const dds = state.ddsKits.find((k) => k.id === ddsId);
-  if (!dds) return;
-  const segments = [
-    { text: `Kit Dê Dê Ésse validado por Cleilson. ${dds.title}`, kind: "title" },
-    { text: dds.summary, kind: "body" },
-    ...(dds.script || []).map((p, i) => ({ text: p, elementId: `dds-line-${i}`, kind: "body" })),
-    { text: `Checklist de campo: ${(dds.checklist || []).join(". ")}`, kind: "tip" }
-  ];
-  reader.start(segments, "dds");
-  showToast("🔊 Reproduzindo Kit de DDS em voz humanizada...");
-}
-
-function renderTrending() {
-  const top = state.posts.slice(0, 5);
-  els.trendingList.innerHTML = top
+function renderRecentList() {
+  const recent = state.posts.slice(0, 5);
+  els.recentList.innerHTML = recent
     .map(
       (p, i) => `
-      <li class="trending-item" data-open-slug="${escapeHtml(p.slug)}">
+      <li class="trending-item">
         <span class="trending-num">0${i + 1}</span>
-        <div>
+        <a href="${articleUrl(p.slug)}" target="_blank" rel="noopener">
           <h4>${escapeHtml(p.title)}</h4>
-          <small>${escapeHtml(p.categoryLabel)} • ${escapeHtml(p.views || "5,2 mil")} leituras</small>
-        </div>
+          <small>${escapeHtml(p.categoryLabel)} • ${escapeHtml(p.date)}</small>
+        </a>
       </li>`
     )
     .join("");
 }
 
-function renderShorts() {
-  const videos = state.posts.filter((p) => p.type === "video");
-  els.shortsGrid.innerHTML = videos
-    .map(
-      (v) => `
-      <article class="short-card" data-open-slug="${escapeHtml(v.slug)}">
-        <img src="${escapeHtml(v.image)}" alt="${escapeHtml(v.title)}" loading="lazy" />
-        <div class="short-overlay">
-          <div class="short-play-icon" aria-hidden="true">▶</div>
-          <span class="short-duration">${escapeHtml(v.videoDuration || v.readTime)} • Com Áudio</span>
-          <h3>${escapeHtml(v.title)}</h3>
-          <p>${escapeHtml(v.subtitle)}</p>
-        </div>
-      </article>`
-    )
-    .join("");
+// =========================================================================
+// BANCO DE IMAGENS & INTEGRAÇÃO INSTAGRAM (@ E #HASHTAG)
+// =========================================================================
+function renderInstagramBar() {
+  const cfg = loadInstagramConfig();
+  if (cfg.handle || cfg.feedUrl) {
+    els.instagramStatusBar.innerHTML = `
+      <div class="ig-status-info">
+        <span class="ig-dot connected"></span>
+        <span>
+          <strong>Instagram conectado:</strong> ${escapeHtml(cfg.handle || "Conta vinculada")}
+          ${cfg.hashtag ? ` • Filtro: <strong>${escapeHtml(cfg.hashtag)}</strong>` : ""}
+        </span>
+      </div>
+      <div class="ig-status-actions">
+        ${cfg.feedUrl ? `<button type="button" id="quick-sync-ig" class="btn btn-outline-dark btn-sm">↻ Atualizar do Instagram</button>` : ""}
+        <button type="button" id="quick-edit-ig" class="card-listen-btn">Configurar</button>
+      </div>
+    `;
+  } else {
+    els.instagramStatusBar.innerHTML = `
+      <div class="ig-status-info">
+        <span class="ig-dot"></span>
+        <span><strong>Integração Instagram disponível:</strong> conecte o <strong>@</strong> da conta e uma <strong>#hashtag</strong> para puxar cartazes e infográficos automaticamente.</span>
+      </div>
+      <button type="button" id="quick-edit-ig" class="btn btn-outline-dark btn-sm">Conectar Agora</button>
+    `;
+  }
+
+  const qSync = document.getElementById("quick-sync-ig");
+  if (qSync) qSync.addEventListener("click", syncInstagramFeed);
+  const qEdit = document.getElementById("quick-edit-ig");
+  if (qEdit) qEdit.addEventListener("click", () => openEditor("integrations"));
 }
 
-function renderInfographics() {
-  const imgs = state.posts.filter((p) => p.type === "image");
-  els.infographicsGrid.innerHTML = imgs
+function renderImageBank() {
+  const visible = state.imageBank.filter((img) => state.imageFilter === "all" || img.source === state.imageFilter);
+
+  if (visible.length === 0) {
+    els.imageBankGrid.innerHTML = `
+      <div class="sidebar-card" style="grid-column: 1 / -1; text-align:center; padding: 32px;">
+        <p style="margin:0; color:var(--text-secondary)">Nenhuma imagem nesta aba ainda. Clique em <strong>+ Adicionar Imagem</strong> ou sincronize seu Instagram.</p>
+      </div>`;
+    return;
+  }
+
+  els.imageBankGrid.innerHTML = visible
     .map(
       (item) => `
-      <article class="info-card" data-open-slug="${escapeHtml(item.slug)}">
-        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" />
-        <div class="info-card-body">
-          <span class="badge-cat">${escapeHtml(item.badge || "Guia Visual")}</span>
+      <article class="bank-card" data-open-lightbox="${escapeHtml(item.id)}">
+        <div class="bank-card-media">
+          <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" />
+          <span class="card-type-pill">${item.source === "instagram" ? "📸 Instagram" : "🖼️ Banco de Imagens"}</span>
+        </div>
+        <div class="bank-card-body">
+          <span class="bank-hashtag">${escapeHtml(item.hashtag || "#SegurancaDoTrabalho")}</span>
           <h3>${escapeHtml(item.title)}</h3>
-          <p>${escapeHtml(item.subtitle)}</p>
-          <span class="card-action-link">Abrir Infográfico &amp; Checklist →</span>
-        </div>
-      </article>`
-    )
-    .join("");
-}
-
-// =========================================================================
-// LEITOR DE ARTIGO + AUTO-LEITURA + RESUMO 30s
-// =========================================================================
-function openArticle(slug, { autoPlayMode = null, updateHash = true } = {}) {
-  const post = state.posts.find((p) => p.slug === slug);
-  if (!post) return;
-
-  reader.stop();
-  state.currentPost = post;
-
-  els.homeView.hidden = true;
-  els.articleView.hidden = false;
-
-  els.artCategoryBadge.textContent = `${formatTypeBadge(post.type)} • ${post.categoryLabel}`;
-  els.artTitle.textContent = post.title;
-  els.artSubtitle.textContent = post.subtitle;
-  els.artMetaDetails.textContent = `${post.date} • ${post.readTime} • ${post.views || "Novo"} visualizações`;
-
-  els.artSummaryList.innerHTML = (post.summary || [])
-    .map((item, i) => `<li id="summary-item-${i}">${escapeHtml(item)}</li>`)
-    .join("");
-
-  els.artPracticalTip.innerHTML = `<strong>Aplicação Prática no Campo (Dica do Cleilson):</strong> <span id="summary-tip">${escapeHtml(post.practicalTip || "")}</span>`;
-
-  els.artImage.src = post.image;
-  els.artImage.alt = post.title;
-  els.artImageCaption.textContent = post.imageCaption || "";
-
-  const bodyHtml = [];
-  (post.content || []).forEach((block, i) => {
-    const elId = `art-block-${i}`;
-    if (block.type === "h2") {
-      bodyHtml.push(`<h2 id="${elId}">${escapeHtml(block.text)}</h2>`);
-    } else if (block.type === "callout") {
-      bodyHtml.push(`
-        <div id="${elId}" class="article-callout">
-          <strong>${escapeHtml(block.title)}</strong>
-          <span>${escapeHtml(block.text)}</span>
-        </div>`);
-    } else if (block.type === "checklist") {
-      const items = (block.items || []).map((it) => `<li>${escapeHtml(it)}</li>`).join("");
-      bodyHtml.push(`
-        <div id="${elId}" class="article-checklist">
-          <h3>${escapeHtml(block.title)}</h3>
-          <ul>${items}</ul>
-        </div>`);
-    } else {
-      bodyHtml.push(`<p id="${elId}">${escapeHtml(block.text)}</p>`);
-    }
-
-    if (i === 1) {
-      bodyHtml.push(`
-        <aside class="ad-in-article" aria-label="Publicidade no meio do artigo">
-          <div class="ad-badge">PUBLICIDADE IN-ARTICLE • MAIOR RPM GOOGLE ADSENSE</div>
-          <div class="ad-slot-content">
-            <div class="ad-promo-text">
-              <strong>Espaço Premium no Meio da Leitura</strong>
-              <span>Posição estratégica onde a atenção do leitor é máxima. Pronto para bloco responsivo do AdSense.</span>
-            </div>
-            <a href="#anuncie" class="btn btn-outline-amber btn-sm" id="in-article-ad-cta">Anunciar Aqui</a>
+          <p>${escapeHtml(item.caption)}</p>
+          <div class="bank-card-footer">
+            <span class="card-action-link">Ampliar &amp; Compartilhar →</span>
           </div>
-        </aside>
-      `);
-    }
-  });
-
-  els.artBody.innerHTML = bodyHtml.join("");
-
-  const related = state.posts.filter((p) => p.slug !== post.slug).slice(0, 2);
-  els.relatedGrid.innerHTML = related
-    .map(
-      (r) => `
-      <article class="post-card" style="cursor:pointer" data-open-slug="${escapeHtml(r.slug)}">
-        <div class="post-card-body">
-          <span class="post-card-cat" style="font-size:0.76rem">${escapeHtml(r.categoryLabel)}</span>
-          <h4 class="post-card-title" style="margin-top:4px">${escapeHtml(r.title)}</h4>
-          <span class="card-action-link">Ler agora →</span>
         </div>
       </article>`
     )
     .join("");
-
-  if (updateHash) {
-    history.pushState(null, "", `#artigo/${post.slug}`);
-  }
-  window.scrollTo({ top: 0, behavior: "smooth" });
-
-  if (autoPlayMode) {
-    setTimeout(() => startPostAudio(autoPlayMode), 350);
-  }
 }
 
-function buildAudioSegments(post, mode) {
-  const segments = [{ text: post.title, elementId: "art-title", kind: "title" }];
+async function syncInstagramFeed() {
+  const cfg = loadInstagramConfig();
+  if (!cfg.feedUrl) {
+    showToast("Informe o link do Feed JSON do Instagram (ex: Behold.so) na aba Instagram.");
+    return;
+  }
 
-  if (mode === "summary") {
-    segments.push({ text: "Resumo em 30 segundos:", elementId: "article-summary-box", kind: "heading" });
-    (post.summary || []).forEach((s, i) => {
-      segments.push({ text: s, elementId: `summary-item-${i}`, kind: "body" });
-    });
-    if (post.practicalTip) {
-      segments.push({ text: `Aplicação prática no campo: ${post.practicalTip}`, elementId: "summary-tip", kind: "tip" });
+  try {
+    showToast("Buscando imagens do Instagram...");
+    const res = await fetch(cfg.feedUrl);
+    if (!res.ok) throw new Error("Não foi possível acessar o feed do Instagram.");
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : data.posts || data.data || [];
+    const tagFilter = (cfg.hashtag || "").trim().toLowerCase();
+
+    const imported = [];
+    for (const item of list) {
+      const caption = item.caption || item.prunedCaption || "";
+      const imgUrl = item.mediaUrl || item.media_url || item.thumbnailUrl || "";
+      if (!imgUrl) continue;
+      if (tagFilter && !caption.toLowerCase().includes(tagFilter)) continue;
+
+      imported.push({
+        id: `ig-${item.id || Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        title: caption.split("\n")[0].slice(0, 70) || `Publicação ${cfg.handle || "Instagram"}`,
+        caption: caption.slice(0, 220),
+        hashtag: cfg.hashtag || "#Instagram",
+        category: "offshore",
+        source: "instagram",
+        image: imgUrl,
+        date: new Date(item.timestamp || Date.now()).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+      });
     }
-    return segments;
-  }
 
-  segments.push({ text: post.subtitle, elementId: "art-subtitle", kind: "body" });
-  (post.content || []).forEach((block, i) => {
-    const elId = `art-block-${i}`;
-    if (block.type === "h2") {
-      segments.push({ text: block.text, elementId: elId, kind: "heading" });
-    } else if (block.type === "checklist") {
-      segments.push({ text: `${block.title}. ${(block.items || []).join(". ")}`, elementId: elId, kind: "tip" });
-    } else if (block.type === "callout") {
-      segments.push({ text: `${block.title}. ${block.text}`, elementId: elId, kind: "tip" });
-    } else {
-      segments.push({ text: block.text, elementId: elId, kind: "body" });
-    }
-  });
-  return segments;
-}
-
-function startPostAudio(mode) {
-  if (!state.currentPost) return;
-  const segments = buildAudioSegments(state.currentPost, mode);
-  reader.start(segments, mode);
-}
-
-function closeArticle({ scrollToId = null } = {}) {
-  reader.stop();
-  state.currentPost = null;
-  els.articleView.hidden = true;
-  els.homeView.hidden = false;
-  if (location.hash.startsWith("#artigo/")) {
-    history.pushState(null, "", "#inicio");
-  }
-  if (scrollToId) {
-    const target = document.getElementById(scrollToId);
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth" });
+    if (imported.length === 0) {
+      showToast(`Nenhuma imagem encontrada com a hashtag ${cfg.hashtag || "informada"}.`);
       return;
     }
+
+    const existingPortal = state.imageBank.filter((i) => i.source !== "instagram");
+    state.imageBank = [...imported, ...existingPortal];
+    saveImageBank(state.imageBank);
+    renderImageBank();
+    renderManageLists();
+    renderRealIndicators();
+    showToast(`✓ ${imported.length} imagem(ns) importada(s) do Instagram!`);
+  } catch (err) {
+    showToast(err.message || "Erro ao sincronizar Instagram.");
   }
-  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function openLightbox(id) {
+  const item = state.imageBank.find((i) => i.id === id);
+  if (!item) return;
+  state.activeLightboxItem = item;
+  els.lightboxTag.textContent = `${item.source === "instagram" ? "Instagram" : "Banco de Imagens"} • ${item.hashtag || ""}`;
+  els.lightboxTitle.textContent = item.title;
+  els.lightboxImg.src = item.image;
+  els.lightboxImg.alt = item.title;
+  els.lightboxCaption.textContent = item.caption;
+  els.lbDownload.href = item.image;
+  els.lbDownload.download = `${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.jpg`;
+  els.lightboxModal.hidden = false;
 }
 
 // =========================================================================
-// ESTÚDIO DO CLEILSON (ABAS + CONFIGURAÇÕES)
+// ÁREA DO EDITOR INTUITIVA (PARA PESSOA LEIGA)
 // =========================================================================
-function openStudio(tabName = "validation") {
+function openEditor(tab = "write") {
   els.editorModal.hidden = false;
-  switchStudioTab(tabName);
-  syncConfigForm();
-  renderPendingDdsQueue();
+  switchStudioTab(tab);
+  renderCoverThumbnails();
+  renderManageLists();
+  syncIntegrationForms();
 }
 
 function switchStudioTab(tabName) {
@@ -701,255 +466,376 @@ function switchStudioTab(tabName) {
   });
 }
 
-function syncConfigForm() {
-  const voiceCfg = reader.getNeuralConfig();
-  const aiCfg = loadAiConfig();
-  const vp = document.getElementById("cfg-voice-provider");
-  const vk = document.getElementById("cfg-voice-key");
-  const ap = document.getElementById("cfg-ai-provider");
-  const ak = document.getElementById("cfg-ai-key");
-  if (vp) vp.value = voiceCfg.provider || "browser";
-  if (vk) vk.value = voiceCfg.apiKey || "";
-  if (ap) ap.value = aiCfg.provider || "gemini";
-  if (ak) ak.value = aiCfg.apiKey || "";
+function setSelectedCover(imgSrc, label = "Capa selecionada") {
+  els.edImageValue.value = imgSrc;
+  els.coverPreviewImg.src = imgSrc;
+  els.coverPreviewLabel.textContent = label;
+  document.querySelectorAll(".cover-thumb").forEach((btn) => {
+    btn.classList.toggle("selected", btn.dataset.coverSrc === imgSrc);
+  });
+}
+
+function renderCoverThumbnails() {
+  const uniqueImgs = state.imageBank.slice(0, 6);
+  els.coverThumbnails.innerHTML = uniqueImgs
+    .map(
+      (item) => `
+      <button type="button" class="cover-thumb ${els.edImageValue.value === item.image ? "selected" : ""}" data-cover-src="${escapeHtml(item.image)}" title="${escapeHtml(item.title)}">
+        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" />
+      </button>`
+    )
+    .join("");
+}
+
+function renderManageLists() {
+  els.managePostsList.innerHTML = state.posts
+    .map(
+      (p) => `
+      <div class="manage-row">
+        <div>
+          <strong>${escapeHtml(p.title)}</strong>
+          <small>${escapeHtml(p.categoryLabel)} • ${escapeHtml(p.date)}</small>
+        </div>
+        <div class="manage-row-actions">
+          <button type="button" class="card-listen-btn" data-edit-post="${escapeHtml(p.id)}">Editar</button>
+          <button type="button" class="card-listen-btn btn-danger-soft" data-delete-post="${escapeHtml(p.id)}">Excluir</button>
+        </div>
+      </div>`
+    )
+    .join("");
+
+  els.manageImagesList.innerHTML = state.imageBank
+    .map(
+      (img) => `
+      <div class="manage-row">
+        <div class="manage-img-info">
+          <img src="${escapeHtml(img.image)}" alt="" />
+          <div>
+            <strong>${escapeHtml(img.title)}</strong>
+            <small>${escapeHtml(img.hashtag || "")} • ${img.source === "instagram" ? "Instagram" : "Portal"}</small>
+          </div>
+        </div>
+        <button type="button" class="card-listen-btn btn-danger-soft" data-delete-img="${escapeHtml(img.id)}">Remover</button>
+      </div>`
+    )
+    .join("");
+}
+
+function resetEditorForm() {
+  els.editorForm.reset();
+  els.edId.value = "";
+  els.edCancelEdit.hidden = true;
+  els.edSubmitBtn.textContent = "✓ Publicar no Site Agora";
+  setSelectedCover("assets/images/hero-offshore.jpg", "Capa padrão selecionada");
+}
+
+function loadPostIntoEditor(id) {
+  const post = state.posts.find((p) => p.id === id);
+  if (!post) return;
+  els.edId.value = post.id;
+  els.edTitle.value = post.title;
+  els.edCategory.value = post.category || "offshore";
+  els.edSubtitle.value = post.subtitle || "";
+  els.edSummary.value = (post.summary || []).join("\n");
+  els.edTip.value = post.practicalTip || "";
+  els.edBody.value = serializeBlocksToEasyText(post.content || []);
+  setSelectedCover(post.image || "assets/images/hero-offshore.jpg", "Capa atual do artigo");
+  els.edCancelEdit.hidden = false;
+  els.edSubmitBtn.textContent = "✓ Salvar Alterações";
+  els.editorModal.querySelector(".modal-dialog").scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function syncIntegrationForms() {
+  const ig = loadInstagramConfig();
+  document.getElementById("ig-handle").value = ig.handle || "";
+  document.getElementById("ig-hashtag").value = ig.hashtag || "#cleilsontst";
+  document.getElementById("ig-feed-url").value = ig.feedUrl || "";
+
+  const ga = loadAnalyticsConfig();
+  document.getElementById("ga-id").value = ga.gaMeasurementId || "";
+  document.getElementById("real-readers").value = ga.monthlyReaders || 0;
+}
+
+function refreshAllViews() {
+  state.posts = loadAllPosts();
+  state.imageBank = loadImageBank();
+  renderHero();
+  renderFeed();
+  renderRecentList();
+  renderInstagramBar();
+  renderImageBank();
+  renderRealIndicators();
+  renderManageLists();
+  renderCoverThumbnails();
 }
 
 // =========================================================================
-// EVENTOS & INTERAÇÕES
+// EVENTOS
 // =========================================================================
 function initTheme() {
-  const saved = localStorage.getItem(STORAGE_KEY_THEME) || "light";
+  const saved = localStorage.getItem(STORAGE_KEYS.theme) || "light";
   document.documentElement.setAttribute("data-theme", saved);
-
   els.themeToggle.addEventListener("click", () => {
-    const current = document.documentElement.getAttribute("data-theme");
-    const next = current === "dark" ? "light" : "dark";
+    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem(STORAGE_KEY_THEME, next);
+    localStorage.setItem(STORAGE_KEYS.theme, next);
   });
 }
 
 function bindEvents() {
-  document.addEventListener("click", async (e) => {
-    // Ações de Artigos
-    const listenBtn = e.target.closest("[data-listen-slug]");
-    if (listenBtn) {
-      e.stopPropagation();
-      openArticle(listenBtn.dataset.listenSlug, { autoPlayMode: "full" });
-      return;
-    }
-
-    const openEl = e.target.closest("[data-open-slug]");
-    if (openEl) {
-      openArticle(openEl.dataset.openSlug);
-      return;
-    }
-
-    // Ações dos Kits de DDS (Biblioteca Pública)
-    const openDdsBtn = e.target.closest("[data-open-dds]");
-    if (openDdsBtn) {
-      openDdsModal(openDdsBtn.dataset.openDds);
-      return;
-    }
-
-    const listenDdsBtn = e.target.closest("[data-listen-dds]");
-    if (listenDdsBtn) {
-      listenToDds(listenDdsBtn.dataset.listenDds);
-      return;
-    }
-
-    const waDdsBtn = e.target.closest("[data-wa-dds]");
-    if (waDdsBtn) {
-      const dds = state.ddsKits.find((k) => k.id === waDdsBtn.dataset.waDds);
-      if (dds) {
-        try {
-          await navigator.clipboard.writeText(formatDdsForWhatsApp(dds));
-          showToast("Kit de DDS copiado! Cole direto no grupo de WhatsApp do turno.");
-        } catch {
-          showToast("Não foi possível copiar automaticamente.");
-        }
-      }
-      return;
-    }
-
-    const pdfDdsBtn = e.target.closest("[data-pdf-dds]");
-    if (pdfDdsBtn) {
-      const dds = state.ddsKits.find((k) => k.id === pdfDdsBtn.dataset.pdfDds);
-      if (dds) printDdsCard(dds);
-      return;
-    }
-
-    // Validação Técnica do Cleilson (Aprovar ou Descartar DDS gerado por IA)
-    const approveBtn = e.target.closest("[data-approve-dds]");
-    if (approveBtn) {
-      const id = approveBtn.dataset.approveDds;
-      const card = approveBtn.closest(".pending-dds-card");
-      const target = state.ddsKits.find((k) => k.id === id);
-      if (target && card) {
-        target.title = card.querySelector(".pend-title").value.trim() || target.title;
-        target.norm = card.querySelector(".pend-norm").value.trim() || target.norm;
-        target.summary = card.querySelector(".pend-summary").value.trim() || target.summary;
-        target.script = card
-          .querySelector(".pend-script")
-          .value.split(/\n\s*\n/)
-          .map((s) => s.trim())
-          .filter(Boolean);
-        target.checklist = card
-          .querySelector(".pend-checklist")
-          .value.split("\n")
-          .map((s) => s.trim())
-          .filter(Boolean);
-        target.status = "approved";
-        target.validatedBy = "Cleilson TST";
-        target.validatedAt = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
-        target.weekLabel = "Liberado p/ Segunda-Feira";
-        saveDdsKits(state.ddsKits);
-        renderDdsHub();
-        renderPendingDdsQueue();
-        showToast("✓ DDS validado pelo Cleilson! Publicado no site e agendado para segunda-feira.");
-      }
-      return;
-    }
-
-    const rejectBtn = e.target.closest("[data-reject-dds]");
-    if (rejectBtn) {
-      const id = rejectBtn.dataset.rejectDds;
-      state.ddsKits = state.ddsKits.filter((k) => k.id !== id);
-      saveDdsKits(state.ddsKits);
-      renderPendingDdsQueue();
-      showToast("Rascunho descartado da fila.");
-      return;
-    }
-
-    if (e.target.id === "in-article-ad-cta") {
-      e.preventDefault();
-      closeArticle({ scrollToId: "anuncie" });
-      return;
-    }
-
-    const closeModalBtn = e.target.closest("[data-close-modal]");
-    if (closeModalBtn) {
-      const mId = closeModalBtn.dataset.closeModal;
-      document.getElementById(mId).hidden = true;
-      if (mId === "dds-reader-modal") reader.stop();
-    }
+  // Abrir editor em diferentes abas
+  ["open-editor-top", "open-editor-header", "open-editor-about", "open-editor-footer"].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener("click", () => openEditor("write"));
   });
+  document.getElementById("open-image-bank-btn").addEventListener("click", () => openEditor("images"));
+  document.getElementById("open-instagram-cfg-btn").addEventListener("click", () => openEditor("integrations"));
+  document.getElementById("open-analytics-about").addEventListener("click", () => openEditor("integrations"));
+  document.getElementById("open-privacy-btn").addEventListener("click", () => (els.privacyModal.hidden = false));
 
-  // Abas do Estúdio
+  // Abas do editor
   document.querySelectorAll(".studio-tab").forEach((tab) => {
     tab.addEventListener("click", () => switchStudioTab(tab.dataset.studioTab));
   });
 
-  // Filtros de Kits DDS
-  document.querySelectorAll(".dds-tab").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.ddsArea = btn.dataset.ddsArea;
-      document.querySelectorAll(".dds-tab").forEach((b) => b.classList.toggle("active", b === btn));
-      renderDdsHub();
-    });
-  });
+  // Delegação de cliques
+  document.addEventListener("click", (e) => {
+    const closeBtn = e.target.closest("[data-close-modal]");
+    if (closeBtn) {
+      document.getElementById(closeBtn.dataset.closeModal).hidden = true;
+      return;
+    }
 
-  // Botões do Modal Leitor de DDS
-  els.ddsModalListen.addEventListener("click", () => {
-    if (state.activeDdsModal) listenToDds(state.activeDdsModal.id);
-  });
-  els.ddsModalWhatsapp.addEventListener("click", async () => {
-    if (!state.activeDdsModal) return;
-    await navigator.clipboard.writeText(formatDdsForWhatsApp(state.activeDdsModal));
-    showToast("Roteiro copiado para o WhatsApp!");
-  });
-  els.ddsModalPrint.addEventListener("click", () => {
-    if (state.activeDdsModal) printDdsCard(state.activeDdsModal);
-  });
+    const coverBtn = e.target.closest("[data-cover-src]");
+    if (coverBtn) {
+      setSelectedCover(coverBtn.dataset.coverSrc, "Imagem escolhida do banco");
+      return;
+    }
 
-  // Gerar Novo DDS com IA (Gemini / GPT / Demo)
-  els.generateAiDdsBtn.addEventListener("click", async () => {
-    const btn = els.generateAiDdsBtn;
-    const oldText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = "⏳ Pesquisando tendências SST...";
-    try {
-      const draft = await generateAiDdsDraft(els.aiTopicInput.value.trim());
-      state.ddsKits.unshift(draft);
-      saveDdsKits(state.ddsKits);
-      els.aiTopicInput.value = "";
-      renderPendingDdsQueue();
-      showToast("✨ Novo DDS gerado pela IA! Revise os pontos e clique em Validar.");
-    } catch (err) {
-      showToast(err.message || "Erro ao gerar DDS com IA.");
-    } finally {
-      btn.disabled = false;
-      btn.textContent = oldText;
+    const lbCard = e.target.closest("[data-open-lightbox]");
+    if (lbCard) {
+      openLightbox(lbCard.dataset.openLightbox);
+      return;
+    }
+
+    const editPostBtn = e.target.closest("[data-edit-post]");
+    if (editPostBtn) {
+      loadPostIntoEditor(editPostBtn.dataset.editPost);
+      return;
+    }
+
+    const delPostBtn = e.target.closest("[data-delete-post]");
+    if (delPostBtn) {
+      if (confirm("Deseja remover esta publicação do site?")) {
+        deletePostById(delPostBtn.dataset.deletePost);
+        refreshAllViews();
+        showToast("Publicação removida. Indicadores atualizados.");
+      }
+      return;
+    }
+
+    const delImgBtn = e.target.closest("[data-delete-img]");
+    if (delImgBtn) {
+      state.imageBank = state.imageBank.filter((i) => i.id !== delImgBtn.dataset.deleteImg);
+      saveImageBank(state.imageBank);
+      refreshAllViews();
+      showToast("Imagem removida do banco.");
+      return;
+    }
+
+    // Botões de formatação fácil no texto
+    const toolBtn = e.target.closest("[data-insert]");
+    if (toolBtn) {
+      const kind = toolBtn.dataset.insert;
+      const ta = els.edBody;
+      const snippets = {
+        subtitle: "\n\n## Título da Seção\n\n",
+        bold: " **texto em destaque** ",
+        callout: "\n\nDESTAQUE: Escreva aqui uma orientação importante de campo.\n\n",
+        checklist: "\n\n- Primeiro item para conferir\n- Segundo item para conferir\n- Terceiro item para conferir\n\n"
+      };
+      const pos = ta.selectionStart || ta.value.length;
+      ta.value = ta.value.slice(0, pos) + (snippets[kind] || "") + ta.value.slice(pos);
+      ta.focus();
     }
   });
 
-  // Exportar JSON dos Kits de DDS (para sincronizar com GitHub Actions)
-  els.exportDdsJsonBtn.addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(state.ddsKits, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "dds-kits-validados.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("JSON de Kits DDS exportado!");
+  // Upload de capa direto no editor de artigo
+  els.edCoverUpload.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await readAndCompressImage(file);
+      setSelectedCover(dataUrl, `Foto enviada: ${file.name}`);
+      showToast("Foto de capa carregada com sucesso!");
+    } catch {
+      showToast("Não foi possível carregar a imagem.");
+    }
   });
 
-  // Salvar configurações de Voz Neural HD e IA
-  els.voiceAiConfigForm.addEventListener("submit", (e) => {
+  // Salvar / Publicar Artigo
+  els.editorForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const fd = new FormData(els.voiceAiConfigForm);
-    reader.saveNeuralConfig({
-      provider: String(fd.get("voiceProvider")),
-      apiKey: String(fd.get("voiceApiKey") || "").trim()
-    });
-    saveAiConfig({
-      provider: String(fd.get("aiProvider")),
-      apiKey: String(fd.get("aiApiKey") || "").trim()
-    });
-    showToast("✓ Configurações de Voz Neural HD e IA salvas com sucesso!");
+    const title = els.edTitle.value.trim();
+    const category = els.edCategory.value;
+    const catLabels = {
+      offshore: "Offshore • NR-37",
+      onshore: "Onshore • Indústria",
+      nrs: "NRs & Legislação"
+    };
+
+    const existingId = els.edId.value;
+    const existing = existingId ? state.posts.find((p) => p.id === existingId) : null;
+
+    const slug = existing
+      ? existing.slug
+      : title
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "") +
+        "-" +
+        Date.now().toString().slice(-4);
+
+    const postObj = {
+      id: existing ? existing.id : `post-${Date.now()}`,
+      slug,
+      type: "article",
+      category,
+      categoryLabel: catLabels[category] || "Segurança do Trabalho",
+      badge: existing ? existing.badge : "Nova Publicação",
+      title,
+      subtitle: els.edSubtitle.value.trim(),
+      date: existing
+        ? existing.date
+        : new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }),
+      featured: existing ? Boolean(existing.featured) : false,
+      image: els.edImageValue.value || "assets/images/hero-offshore.jpg",
+      imageCaption: `Publicação técnica de Cleilson TST — ${catLabels[category] || ""}`,
+      summary: els.edSummary.value
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      practicalTip: els.edTip.value.trim(),
+      content: parseEasyEditorBody(els.edBody.value)
+    };
+
+    saveCustomPost(postObj);
+    resetEditorForm();
+    refreshAllViews();
+    els.editorModal.hidden = true;
+    showToast("✓ Publicado! Os indicadores reais e especialidades foram atualizados.");
   });
 
-  // Atalhos para abrir o Estúdio na aba certa
-  ["open-editor-top", "open-editor-about", "open-editor-footer"].forEach((id) => {
-    const btn = document.getElementById(id);
-    if (btn) btn.addEventListener("click", () => openStudio("publish"));
+  els.edCancelEdit.addEventListener("click", resetEditorForm);
+
+  // Upload no Banco de Imagens (clique ou arrastar e soltar)
+  const handleBankFile = async (file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    state.pendingBankImageDataUrl = await readAndCompressImage(file);
+    els.bankPreviewImg.src = state.pendingBankImageDataUrl;
+    els.bankFilePreview.hidden = false;
+  };
+
+  els.bankFileInput.addEventListener("change", (e) => handleBankFile(e.target.files?.[0]));
+  els.bankDropzone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    els.bankDropzone.classList.add("drag-over");
+  });
+  els.bankDropzone.addEventListener("dragleave", () => els.bankDropzone.classList.remove("drag-over"));
+  els.bankDropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    els.bankDropzone.classList.remove("drag-over");
+    handleBankFile(e.dataTransfer.files?.[0]);
   });
 
-  const openValBtn = document.getElementById("open-validation-queue-btn");
-  if (openValBtn) openValBtn.addEventListener("click", () => openStudio("validation"));
+  els.imageBankForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!state.pendingBankImageDataUrl) {
+      showToast("Selecione ou arraste uma imagem primeiro.");
+      return;
+    }
+    const fd = new FormData(els.imageBankForm);
+    const newImg = {
+      id: `img-${Date.now()}`,
+      title: String(fd.get("title") || "").trim(),
+      caption: String(fd.get("caption") || "").trim(),
+      hashtag: String(fd.get("hashtag") || "#SegurancaDoTrabalho").trim(),
+      category: "offshore",
+      source: "portal",
+      image: state.pendingBankImageDataUrl,
+      date: new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+    };
+    state.imageBank.unshift(newImg);
+    saveImageBank(state.imageBank);
+    state.pendingBankImageDataUrl = "";
+    els.bankFilePreview.hidden = true;
+    els.imageBankForm.reset();
+    refreshAllViews();
+    showToast("✓ Imagem adicionada ao Banco de Imagens!");
+  });
 
-  const openVoiceCfgBtn = document.getElementById("open-voice-config");
-  if (openVoiceCfgBtn) openVoiceCfgBtn.addEventListener("click", () => openStudio("ai-voice"));
+  // Salvar Instagram & Sincronizar
+  els.instagramConfigForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const fd = new FormData(els.instagramConfigForm);
+    saveInstagramConfig({
+      handle: String(fd.get("handle") || "").trim(),
+      hashtag: String(fd.get("hashtag") || "").trim(),
+      feedUrl: String(fd.get("feedUrl") || "").trim()
+    });
+    renderInstagramBar();
+    showToast("✓ Configurações do Instagram salvas!");
+  });
 
-  // Navegação por categoria no header/footer
+  els.syncInstagramBtn.addEventListener("click", syncInstagramFeed);
+
+  // Salvar Analytics / Leitores Mensais Reais
+  els.analyticsConfigForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const fd = new FormData(els.analyticsConfigForm);
+    const readers = Math.max(0, Number(fd.get("monthlyReaders") || 0));
+    saveAnalyticsConfig({
+      gaMeasurementId: String(fd.get("gaMeasurementId") || "").trim(),
+      monthlyReaders: readers
+    });
+    renderRealIndicators();
+    showToast(
+      readers >= SITE_CONFIG.minReadersToDisplay
+        ? "✓ Indicador de Leitores Mensais ativado no site!"
+        : "✓ Salvo! O indicador aparecerá automaticamente ao atingir 500 leitores reais."
+    );
+  });
+
+  // Lightbox: WhatsApp e Instagram
+  els.lbShareWa.addEventListener("click", () => {
+    const item = state.activeLightboxItem;
+    if (!item) return;
+    const text = `🦺 *${item.title}*\n${item.caption}\n${item.hashtag || ""}\n\nPortal Cleilson TST: ${window.location.href}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+  });
+
+  els.lbCopyIg.addEventListener("click", async () => {
+    const item = state.activeLightboxItem;
+    if (!item) return;
+    const text = `${item.title}\n\n${item.caption}\n\n${item.hashtag || "#SegurancaDoTrabalho #TST"}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("Legenda + hashtags copiadas! Pronto para postar no Instagram.");
+    } catch {
+      showToast("Não foi possível copiar automaticamente.");
+    }
+  });
+
+  // Filtros e Busca
   document.querySelectorAll("[data-nav-cat]").forEach((link) => {
     link.addEventListener("click", () => {
-      const cat = link.dataset.navCat;
-      if (state.currentPost) closeArticle({ scrollToId: cat === "all" ? "inicio" : "feed" });
-      state.category = cat;
-      document.querySelectorAll(".cat-tab").forEach((t) => t.classList.toggle("active", t.dataset.category === cat));
+      state.category = link.dataset.navCat;
+      document.querySelectorAll(".cat-tab").forEach((t) => t.classList.toggle("active", t.dataset.category === state.category));
       document.querySelectorAll(".nav-link").forEach((n) => n.classList.toggle("active", n === link));
       renderFeed();
       els.mainNav.classList.remove("open");
-    });
-  });
-
-  document.querySelectorAll('a[href^="#"]').forEach((a) => {
-    a.addEventListener("click", () => {
-      const targetId = a.getAttribute("href").slice(1);
-      if (state.currentPost && targetId && !targetId.startsWith("artigo/")) {
-        closeArticle({ scrollToId: targetId });
-      }
-      els.mainNav.classList.remove("open");
-    });
-  });
-
-  document.querySelectorAll(".format-pill").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.format = btn.dataset.format;
-      document.querySelectorAll(".format-pill").forEach((b) => b.classList.toggle("active", b === btn));
-      renderFeed();
     });
   });
 
@@ -961,148 +847,25 @@ function bindEvents() {
     });
   });
 
-  els.searchInput.addEventListener("input", (e) => {
-    state.search = e.target.value;
-    if (state.currentPost) closeArticle({ scrollToId: "feed" });
-    renderFeed();
-  });
-
-  els.backToHome.addEventListener("click", () => closeArticle());
-  els.mobileMenuBtn.addEventListener("click", () => els.mainNav.classList.toggle("open"));
-
-  // Controles de Auto-Leitura (TTS)
-  els.ttsPlaySummary.addEventListener("click", () => startPostAudio("summary"));
-  els.ttsPlayFull.addEventListener("click", () => startPostAudio("full"));
-  els.ttsTogglePause.addEventListener("click", () => reader.togglePlayPause());
-  els.ttsStop.addEventListener("click", () => reader.stop());
-  els.ttsRate.addEventListener("change", (e) => reader.setRate(e.target.value));
-  els.ttsVoice.addEventListener("change", (e) => reader.setVoice(e.target.value));
-
-  // Compartilhamento
-  els.shareWhatsapp.addEventListener("click", () => {
-    if (!state.currentPost) return;
-    const text = `Confira este guia de Segurança do Trabalho do Cleilson TST: "${state.currentPost.title}" ${location.href}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
-  });
-
-  els.shareLinkedin.addEventListener("click", () => {
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(location.href)}`, "_blank", "noopener");
-  });
-
-  els.shareCopy.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      showToast("Link copiado! Pronto para colar no WhatsApp ou LinkedIn.");
-    } catch {
-      showToast("Copie o endereço da barra do navegador.");
-    }
-  });
-
-  document.getElementById("open-privacy-btn").addEventListener("click", () => {
-    els.privacyModal.hidden = false;
-  });
-
-  // Publicar Novo Conteúdo na Área do Editor
-  els.editorForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const fd = new FormData(els.editorForm);
-    const title = String(fd.get("title")).trim();
-    const category = String(fd.get("category"));
-    const type = String(fd.get("type"));
-
-    const catLabels = {
-      offshore: "Offshore • NR-37",
-      onshore: "Onshore • Indústria",
-      nrs: "NRs & Legislação",
-      dds: "DDS & Cultura"
-    };
-
-    const slug =
-      title
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "") +
-      "-" +
-      Date.now().toString().slice(-4);
-
-    const summaryLines = String(fd.get("summary"))
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    const bodyParagraphs = String(fd.get("body"))
-      .split(/\n\s*\n/)
-      .map((p) => p.trim())
-      .filter(Boolean)
-      .map((text) => ({ type: "p", text }));
-
-    const newPost = {
-      id: `custom-${Date.now()}`,
-      slug,
-      type,
-      category,
-      categoryLabel: catLabels[category] || "Segurança do Trabalho",
-      badge: "Recém-Publicado",
-      title,
-      subtitle: String(fd.get("subtitle")).trim(),
-      date: new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }),
-      readTime: String(fd.get("readTime")).trim(),
-      audioDuration: "Auto-leitura pronta",
-      views: "Novo",
-      featured: false,
-      image: String(fd.get("image")),
-      imageCaption: `Publicação oficial de Cleilson TST — ${catLabels[category] || ""}`,
-      summary: summaryLines,
-      practicalTip: String(fd.get("practicalTip")).trim(),
-      content: bodyParagraphs
-    };
-
-    saveCustomPost(newPost);
-    renderHero();
-    renderFeed();
-    renderTrending();
-    renderShorts();
-    renderInfographics();
-
-    els.editorForm.reset();
-    els.editorModal.hidden = true;
-    showToast("Publicação criada com sucesso! Abrindo agora...");
-    openArticle(newPost.slug);
-  });
-
-  els.exportJsonBtn.addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(state.posts, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "posts-cleilson-tst.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("Arquivo JSON exportado! Ideal para salvar no repositório GitHub.");
-  });
-
-  // Formulários de Newsletter (Inscrição para Kits Automáticos de Segunda-Feira)
-  ["sidebar-newsletter-form", "article-newsletter-form"].forEach((id) => {
-    const form = document.getElementById(id);
-    if (!form) return;
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const fd = new FormData(form);
-      addSubscriber(String(fd.get("email") || ""), String(fd.get("name") || ""));
-      if (els.ddsSubCounter) {
-        els.ddsSubCounter.textContent = getSubscriberCount().toLocaleString("pt-BR");
-      }
-      form.reset();
-      showToast("✓ Inscrição confirmada! Você receberá os Kits de DDS validados toda segunda-feira às 06h.");
+  document.querySelectorAll(".img-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.imageFilter = btn.dataset.imgFilter;
+      document.querySelectorAll(".img-tab").forEach((b) => b.classList.toggle("active", b === btn));
+      renderImageBank();
     });
   });
 
-  document.getElementById("advertiser-form").addEventListener("submit", (e) => {
+  els.searchInput.addEventListener("input", (e) => {
+    state.search = e.target.value;
+    renderFeed();
+  });
+
+  els.mobileMenuBtn.addEventListener("click", () => els.mainNav.classList.toggle("open"));
+
+  document.getElementById("sidebar-newsletter-form").addEventListener("submit", (e) => {
     e.preventDefault();
     e.target.reset();
-    showToast("Proposta solicitada! A equipe comercial do Cleilson TST retornará em breve.");
+    showToast("✓ E-mail cadastrado! Você será avisado sobre novas publicações.");
   });
 
   window.addEventListener("scroll", () => {
@@ -1110,38 +873,12 @@ function bindEvents() {
     const pct = docHeight > 0 ? Math.min(100, Math.max(0, (window.scrollY / docHeight) * 100)) : 0;
     els.readingProgress.style.width = `${pct}%`;
   });
-
-  window.addEventListener("hashchange", handleRouteFromHash);
 }
 
-function handleRouteFromHash() {
-  if (location.hash.startsWith("#artigo/")) {
-    const slug = location.hash.replace("#artigo/", "").trim();
-    if (slug && (!state.currentPost || state.currentPost.slug !== slug)) {
-      openArticle(slug, { updateHash: false });
-    }
-  } else if (state.currentPost) {
-    closeArticle();
-  }
-}
-
-// =========================================================================
-// INICIALIZAÇÃO
-// =========================================================================
 function init() {
   initTheme();
-  loadPosts();
-  state.ddsKits = loadDdsKits();
-  renderStaticBranding();
-  renderHero();
-  renderFeed();
-  renderDdsHub();
-  renderPendingDdsQueue();
-  renderTrending();
-  renderShorts();
-  renderInfographics();
+  refreshAllViews();
   bindEvents();
-  handleRouteFromHash();
 }
 
 init();

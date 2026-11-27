@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leitura | Cleilson TST</title>
+  <meta name="description" content="Leitura focada de Segurança do Trabalho (Offshore & Onshore) por Cleilson TST." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body class="reader-standalone-body">
+  <!-- Barra de Progresso de Leitura -->
+  <div id="reading-progress" class="reading-progress" aria-hidden="true"></div>
+
+  <!-- Cabeçalho Minimalista (Sem poluição visual) -->
+  <header class="reader-header">
+    <div class="container reader-header-inner">
+      <div class="reader-left">
+        <a href="index.html" class="back-btn">← Voltar ao Portal</a>
+        <a href="index.html" class="brand brand-compact" aria-label="Cleilson TST">
+          <span class="brand-text">
+            <strong>CLEILSON <span class="brand-accent">TST</span></strong>
+          </span>
+        </a>
+      </div>
+
+      <div class="reader-tools">
+        <div class="font-size-controls" aria-label="Ajustar tamanho da letra">
+          <button type="button" id="font-dec" class="icon-btn" title="Diminuir letra">A-</button>
+          <button type="button" id="font-inc" class="icon-btn" title="Aumentar letra">A+</button>
+        </div>
+        <button type="button" id="theme-toggle" class="icon-btn" title="Alternar modo claro/escuro" aria-label="Alternar tema">
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 2V4M12 20V22M4.93 4.93L6.34 6.34M17.66 17.66L19.07 19.07M2 12H4M20 12H22M4.93 19.07L6.34 17.66M17.66 6.34L19.07 4.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo Focado de Leitura (Coluna Única Limpa) -->
+  <main class="reader-main">
+    <div class="reader-container">
+      <article id="standalone-article" class="article-main reader-card">
+        <div class="article-topbar">
+          <span id="art-category-badge" class="badge-cat"></span>
+          <span id="art-date-read" class="reader-meta-pill"></span>
+        </div>
+
+        <h1 id="art-title" class="article-title"></h1>
+        <p id="art-subtitle" class="article-subtitle"></p>
+
+        <div class="article-meta-bar">
+          <div class="art-author-inline">
+            <img src="assets/images/author-cleilson.jpg" alt="Cleilson" />
+            <div>
+              <strong>Por Cleilson</strong>
+              <span>Técnico em Segurança do Trabalho (TST) • Offshore &amp; Onshore</span>
+            </div>
+          </div>
+          <div class="share-actions">
+            <button type="button" id="share-whatsapp" class="share-btn share-wa">WhatsApp</button>
+            <button type="button" id="share-linkedin" class="share-btn share-li">LinkedIn</button>
+            <button type="button" id="share-copy" class="share-btn">Copiar Link</button>
+          </div>
+        </div>
+
+        <!-- Caixa de Resumo em 30 Segundos -->
+        <section class="summary-box" id="article-summary-box" aria-label="Resumo executivo do texto">
+          <div class="summary-title">
+            <span class="summary-pill">RESUMO EM 30 SEGUNDOS</span>
+            <h2>Pontos Principais Deste Conteúdo</h2>
+          </div>
+          <ul id="art-summary-list" class="summary-list"></ul>
+          <div id="art-practical-tip" class="practical-tip-box"></div>
+        </section>
+
+        <!-- Imagem Principal -->
+        <figure class="article-hero-figure">
+          <img id="art-image" src="" alt="" />
+          <figcaption id="art-image-caption"></figcaption>
+        </figure>
+
+        <!-- Corpo Limpo do Artigo -->
+        <div id="art-body" class="article-body"></div>
+
+        <!-- Assinatura do Autor -->
+        <div class="article-author-box">
+          <img src="assets/images/author-cleilson.jpg" alt="Cleilson TST" />
+          <div>
+            <span class="eyebrow">QUEM ASSINA ESTE CONTEÚDO</span>
+            <h3>Cleilson — Técnico em Segurança do Trabalho (TST)</h3>
+            <p>Conteúdo técnico independente focado em prevenção prática em ambientes Offshore e Onshore.</p>
+          </div>
+        </div>
+
+        <!-- Relacionados -->
+        <section class="related-section">
+          <h3>Outras Publicações</h3>
+          <div id="related-grid" class="related-grid"></div>
+        </section>
+      </article>
+
+      <div id="article-not-found" class="article-main reader-card" hidden style="text-align:center; padding:48px 24px;">
+        <h2>Publicação não encontrada</h2>
+        <p style="color:var(--text-secondary)">O texto solicitado pode ter sido removido ou movido.</p>
+        <a href="index.html" class="btn btn-primary" style="margin-top:12px">Voltar para o Portal</a>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="scripts/article.js"></script>
+</body>
+</html>
