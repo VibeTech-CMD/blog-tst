@@ -2904,3 +2904,80 @@ button, input, select, textarea {
     padding: 22px 18px;
   }
 }
+
+/* ==========================================================================
+   MODO PROPRIETÁRIO, GOOGLE ADS LIMPO & PERFIL EDITÁVEL
+   ========================================================================== */
+.owner-session-bar {
+  background: #064e3b;
+  color: #ecfdf5;
+  font-size: 0.84rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.owner-session-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 20px;
+  flex-wrap: wrap;
+}
+
+.owner-session-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ad-google-clean {
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  text-align: center;
+  padding: 12px 16px;
+}
+
+.ad-placeholder-clean {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  padding: 8px 4px 2px;
+}
+
+.ad-placeholder-rect {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  padding: 34px 12px;
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+}
+
+.profile-avatar-editor {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.profile-avatar-editor img {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2.5px solid var(--amber);
+}
+
+.about-history {
+  font-size: 0.94rem;
+  color: #94a3b8;
+  margin: -12px 0 24px;
+  line-height: 1.65;
+}
+
+.login-error-msg {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+}

@@ -22,6 +22,17 @@
 <body>
   <div id="reading-progress" class="reading-progress" aria-hidden="true"></div>
 
+  <!-- Barra Privada do Proprietário (Invisível ao público; aparece apenas após login por e-mail autorizado) -->
+  <div id="owner-session-bar" class="owner-session-bar" hidden>
+    <div class="container owner-session-inner">
+      <span>🔐 <strong>Modo Proprietário Ativo</strong> (<span id="owner-logged-email"></span>)</span>
+      <div class="owner-session-actions">
+        <button type="button" id="owner-open-studio-btn" class="btn btn-primary btn-sm">✍️ Abrir Área do Editor</button>
+        <button type="button" id="owner-logout-btn" class="top-link-btn" style="color:#ffffff">Sair</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Barra Superior -->
   <div class="top-bar">
     <div class="container top-bar-inner">
@@ -29,15 +40,13 @@
         <span class="pulse-dot" aria-hidden="true"></span>
         <span>Segurança do Trabalho na prática • Offshore &amp; Onshore • Conteúdo técnico verídico</span>
       </div>
-      <div class="top-bar-actions">
-        <button type="button" id="open-editor-top" class="top-link-btn">✍️ Área do Editor</button>
-      </div>
     </div>
   </div>
 
   <!-- Header Principal -->
   <header class="site-header">
     <div class="container header-inner">
+      <!-- Gatilho oculto do proprietário: 5 cliques rápidos no logo abrem o login exclusivo por e-mail -->
       <a href="#inicio" id="brand-logo" class="brand" aria-label="Cleilson TST - Página Inicial">
         <span class="brand-icon" aria-hidden="true">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -79,8 +88,6 @@
           </svg>
         </button>
 
-        <button type="button" id="open-editor-header" class="btn btn-primary btn-sm hide-mobile">Publicar Texto</button>
-
         <button type="button" id="mobile-menu-btn" class="icon-btn mobile-only" aria-label="Abrir menu">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -90,17 +97,26 @@
     </div>
   </header>
 
+  <!-- ESPAÇO PRÉ-DEFINIDO GOOGLE ADS (TOPO — LEADERBOARD 728x90 / RESPONSIVO) -->
+  <div class="ad-leaderboard-wrapper">
+    <div class="container">
+      <aside class="ad-slot ad-google-clean" data-ad-slot="top-leaderboard" aria-label="Publicidade Google Ads">
+        <div class="ad-badge">GOOGLE ADS • ESPAÇO RESERVADO (728x90 / RESPONSIVO • TEMAS SST &amp; INDÚSTRIA)</div>
+        <!-- Cole aqui o bloco <ins class="adsbygoogle"> do Google AdSense -->
+        <div class="ad-placeholder-clean">Anúncio contextual Google Ads (Segurança do Trabalho, EPIs e Treinamentos NR)</div>
+      </aside>
+    </div>
+  </div>
+
   <main id="home-view">
-    <!-- Hero Editorial em Destaque (Abre em Página Independente Limpa) -->
+    <!-- Hero Editorial em Destaque -->
     <section id="inicio" class="hero-section">
       <div class="container">
-        <div id="hero-featured" class="hero-card">
-          <!-- Renderizado via app.js -->
-        </div>
+        <div id="hero-featured" class="hero-card"></div>
       </div>
     </section>
 
-    <!-- Feed de Publicações + Sidebar Limpa -->
+    <!-- Feed de Publicações + Sidebar -->
     <section id="feed" class="portal-layout-section">
       <div class="container portal-grid">
         <div class="portal-main">
@@ -120,33 +136,28 @@
           </div>
 
           <div id="feed-status" class="feed-status" hidden></div>
-
-          <div id="posts-grid" class="posts-grid">
-            <!-- Renderizado via app.js -->
-          </div>
+          <div id="posts-grid" class="posts-grid"></div>
         </div>
 
-        <!-- Sidebar Limpa (100% Real, Sem Números Falsos) -->
+        <!-- Sidebar -->
         <aside class="portal-sidebar" aria-label="Barra lateral">
           <div class="sidebar-card author-mini-card">
             <div class="author-mini-header">
-              <img src="assets/images/author-cleilson.jpg" alt="Cleilson - Técnico em Segurança do Trabalho" class="author-avatar" />
+              <img id="sidebar-author-avatar" src="assets/images/author-cleilson.jpg" alt="Cleilson - Técnico em Segurança do Trabalho" class="author-avatar" />
               <div>
                 <span class="verified-badge">Responsável Técnico</span>
-                <h3>Cleilson</h3>
-                <p>TST • Offshore &amp; Onshore</p>
+                <h3 id="sidebar-author-name">Cleilson</h3>
+                <p id="sidebar-author-role">TST • Offshore &amp; Onshore</p>
               </div>
             </div>
-            <p class="author-mini-bio">
-              Conteúdos técnicos fundamentados nas Normas Regulamentadoras e na rotina real de plataformas offshore e indústrias onshore.
-            </p>
+            <p id="sidebar-author-bio" class="author-mini-bio"></p>
             <a href="#sobre" class="btn btn-dark btn-full btn-sm">Ver Perfil &amp; Indicadores</a>
           </div>
 
           <div id="newsletter-section" class="sidebar-card newsletter-card">
             <span class="pill-amber">ATUALIZAÇÕES DO PORTAL</span>
             <h3>Receba Novos Artigos no Seu E-mail</h3>
-            <p>Avise-me quando novos textos técnicos e infográficos forem publicados por Cleilson.</p>
+            <p>Avise-me quando novos textos técnicos e infográficos forem publicados.</p>
             <form id="sidebar-newsletter-form" class="newsletter-form">
               <input type="text" name="name" placeholder="Seu nome" required />
               <input type="email" name="email" placeholder="Seu e-mail" required />
@@ -155,85 +166,68 @@
             <small class="form-note">Sem spam. Envio apenas de conteúdos técnicos publicados no portal.</small>
           </div>
 
+          <!-- ESPAÇO PRÉ-DEFINIDO GOOGLE ADS (SIDEBAR — 300x250 DISPLAY) -->
+          <aside class="ad-slot ad-google-clean ad-rectangle" data-ad-slot="sidebar-display" aria-label="Publicidade lateral Google Ads">
+            <div class="ad-badge">GOOGLE ADS • 300x250 DISPLAY</div>
+            <!-- Cole aqui o bloco <ins class="adsbygoogle"> do Google AdSense -->
+            <div class="ad-placeholder-rect">Espaço reservado para Google Ads relacionado a Segurança do Trabalho, Engenharia e Indústria.</div>
+          </aside>
+
           <div class="sidebar-card trending-card">
             <h3 class="sidebar-title">Publicações Recentes</h3>
-            <ol id="recent-list" class="trending-list">
-              <!-- Renderizado via app.js -->
-            </ol>
+            <ol id="recent-list" class="trending-list"></ol>
           </div>
         </aside>
       </div>
     </section>
 
-    <!-- =========================================================
-         INFOGRAFICOS, BANCO DE IMAGENS & INTEGRAÇÃO INSTAGRAM
-         ========================================================= -->
+    <!-- Infográficos, Banco de Imagens & Instagram -->
     <section id="infograficos" class="infographics-section">
       <div class="container">
         <div class="section-header-bar">
           <div>
             <span class="eyebrow">INFOGRAFICOS, CARTAZES &amp; BANCO DE IMAGENS</span>
-            <h2>Materiais Visuais &amp; Integração com Instagram</h2>
-          </div>
-          <div class="visual-actions-row">
-            <button type="button" id="open-image-bank-btn" class="btn btn-primary btn-sm">+ Adicionar Imagem</button>
-            <button type="button" id="open-instagram-cfg-btn" class="btn btn-dark btn-sm">Conectar Instagram (@ / #)</button>
+            <h2>Materiais Visuais &amp; Galeria</h2>
           </div>
         </div>
 
-        <!-- Barra de Status da Integração Instagram -->
-        <div id="instagram-status-bar" class="instagram-status-bar">
-          <!-- Renderizado via app.js -->
-        </div>
+        <div id="instagram-status-bar" class="instagram-status-bar" hidden></div>
 
-        <!-- Filtros do Banco de Imagens -->
         <div class="category-tabs" style="margin-bottom:20px">
           <button type="button" class="img-tab active" data-img-filter="all">Todas as Imagens</button>
           <button type="button" class="img-tab" data-img-filter="portal">Banco do Portal</button>
           <button type="button" class="img-tab" data-img-filter="instagram">Vindas do Instagram</button>
         </div>
 
-        <div id="image-bank-grid" class="image-bank-grid">
-          <!-- Renderizado via app.js -->
-        </div>
+        <div id="image-bank-grid" class="image-bank-grid"></div>
       </div>
     </section>
 
-    <!-- =========================================================
-         QUEM ASSINA ESTE PORTAL — INDICADORES 100% REAIS E DINÂMICOS
-         ========================================================= -->
+    <!-- Quem Assina Este Portal (Dinâmico e Editável) -->
     <section id="sobre" class="about-author-section">
       <div class="container about-grid">
         <div class="about-photo-col">
           <div class="about-photo-frame">
-            <img src="assets/images/author-cleilson.jpg" alt="Cleilson — Responsável pelo Portal Cleilson TST" />
+            <img id="about-author-avatar" src="assets/images/author-cleilson.jpg" alt="Cleilson — Responsável pelo Portal" />
             <div class="about-badge-float">
-              <strong>Cleilson TST</strong>
-              <span>Segurança do Trabalho • Offshore &amp; Onshore</span>
+              <strong id="about-author-badge-name">Cleilson TST</strong>
+              <span id="about-author-badge-role">Segurança do Trabalho • Offshore &amp; Onshore</span>
             </div>
           </div>
         </div>
         <div class="about-content-col">
           <span class="eyebrow">QUEM ASSINA ESTE PORTAL</span>
-          <h2>Construindo Cultura de Segurança Real — Do Convés Offshore ao Chão de Fábrica</h2>
+          <h2 id="about-headline"></h2>
           <p id="about-bio-text" class="about-lead"></p>
+          <p id="about-history-text" class="about-history"></p>
 
-          <!-- Indicadores Reais (Contagem Contínua + Especialidades Adaptativas + Leitores só após >= 500) -->
-          <div id="about-stats" class="about-stats-grid">
-            <!-- Renderizado dinamicamente via computeRealMetrics() -->
-          </div>
-
-          <div class="about-cta-row">
-            <button type="button" id="open-editor-about" class="btn btn-primary">✍️ Publicar Novo Conteúdo</button>
-            <button type="button" id="open-analytics-about" class="btn btn-outline-light">Conectar Google Analytics</button>
-          </div>
+          <!-- Indicadores 100% Reais e Dinâmicos -->
+          <div id="about-stats" class="about-stats-grid"></div>
         </div>
       </div>
     </section>
 
-    <!-- =========================================================
-         MONETIZAÇÃO E PARCERIAS COMERCIAIS — EM DESENVOLVIMENTO
-         ========================================================= -->
+    <!-- Monetização e Parcerias Comerciais — Em Desenvolvimento -->
     <section id="anuncie" class="monetize-section">
       <div class="container">
         <div class="dev-banner-card">
@@ -249,7 +243,7 @@
   <footer class="site-footer">
     <div class="container footer-grid">
       <div class="footer-brand">
-        <strong>CLEILSON <span class="brand-accent">TST</span></strong>
+        <strong id="footer-secret-brand" style="cursor:default; user-select:none;">CLEILSON <span class="brand-accent">TST</span></strong>
         <p>Portal independente de Segurança do Trabalho (Offshore &amp; Onshore). Conteúdo técnico real, objetivo e verificado.</p>
       </div>
       <div>
@@ -267,7 +261,6 @@
           <li><a href="#sobre">Sobre Cleilson</a></li>
           <li><a href="#anuncie">Monetização e Parcerias</a></li>
           <li><button type="button" id="open-privacy-btn" class="footer-link-btn">Política de Privacidade</button></li>
-          <li><button type="button" id="open-editor-footer" class="footer-link-btn">Área do Editor</button></li>
         </ul>
       </div>
     </div>
@@ -278,38 +271,65 @@
   </footer>
 
   <!-- =========================================================
-       MODAL: ÁREA DO EDITOR INTUITIVA (PARA PESSOA LEIGA)
+       MODAL OCULTO: ACESSO RESTRITO AO PROPRIETÁRIO (POR E-MAIL)
+       ========================================================= -->
+  <div id="owner-login-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="owner-login-title">
+    <div class="modal-dialog" style="max-width:440px">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">ACESSO RESTRITO</span>
+          <h3 id="owner-login-title">Área Exclusiva do Proprietário</h3>
+        </div>
+        <button type="button" class="modal-close" data-close-modal="owner-login-modal" aria-label="Fechar">✕</button>
+      </div>
+      <form id="owner-login-form" class="editor-form">
+        <p class="studio-hint" style="margin:0">
+          Informe o <strong>e-mail autorizado do proprietário</strong> e a chave de acesso para gerenciar publicações, imagens e perfil.
+        </p>
+        <div class="form-group">
+          <label for="login-owner-email">E-mail do Proprietário</label>
+          <input type="email" id="login-owner-email" name="email" placeholder="seu-email@dominio.com.br" required autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label for="login-owner-pass">Chave de Acesso</label>
+          <input type="password" id="login-owner-pass" name="passcode" placeholder="Digite sua senha de acesso" required autocomplete="current-password" />
+        </div>
+        <div id="owner-login-error" class="login-error-msg" hidden>E-mail ou chave de acesso inválidos.</div>
+        <button type="submit" class="btn btn-primary btn-full">Entrar na Área do Editor</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Input oculto para troca rápida de capa de qualquer publicação -->
+  <input type="file" id="quick-cover-file" accept="image/*" hidden />
+
+  <!-- =========================================================
+       MODAL: ÁREA DO EDITOR INTUITIVA (SOMENTE PROPRIETÁRIO)
        ========================================================= -->
   <div id="editor-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="editor-modal-title">
     <div class="modal-dialog modal-xl">
       <div class="modal-header">
         <div>
-          <span class="eyebrow">PAINEL FÁCIL DO CLEILSON</span>
-          <h3 id="editor-modal-title">Área do Editor — Publicar e Gerenciar Conteúdo</h3>
+          <span class="eyebrow">PAINEL PRIVADO DO PROPRIETÁRIO</span>
+          <h3 id="editor-modal-title">Área do Editor — Publicações, Imagens &amp; Perfil</h3>
         </div>
         <button type="button" class="modal-close" data-close-modal="editor-modal" aria-label="Fechar">✕</button>
       </div>
 
       <div class="studio-tabs" role="tablist">
-        <button type="button" class="studio-tab active" data-studio-tab="write">
-          ✍️ Escrever Artigo
-        </button>
-        <button type="button" class="studio-tab" data-studio-tab="images">
-          🖼️ Banco de Imagens
-        </button>
-        <button type="button" class="studio-tab" data-studio-tab="integrations">
-          📲 Instagram &amp; Google
-        </button>
+        <button type="button" class="studio-tab active" data-studio-tab="write">✍️ Artigos &amp; Capas</button>
+        <button type="button" class="studio-tab" data-studio-tab="images">🖼️ Banco de Imagens</button>
+        <button type="button" class="studio-tab" data-studio-tab="profile">👤 Perfil do Cleilson &amp; Config.</button>
+        <button type="button" class="studio-tab" data-studio-tab="integrations">📲 Instagram &amp; Google</button>
       </div>
 
-      <!-- ABA 1: ESCREVER OU EDITAR ARTIGO (SIMPLES E VISUAL) -->
+      <!-- ABA 1: ESCREVER, EDITAR E TROCAR CAPAS -->
       <div id="studio-panel-write" class="studio-panel">
         <form id="editor-form" class="editor-form">
           <input type="hidden" id="ed-id" name="id" value="" />
 
-          <!-- Passo 1: Foto de Capa Visual + Upload -->
           <div class="easy-step-box">
-            <label class="easy-step-title">1. Escolha a foto de capa (clique numa imagem ou envie do seu celular/PC)</label>
+            <label class="easy-step-title">1. Foto de Capa da Publicação (escolha ou envie do seu aparelho)</label>
             <div class="cover-picker-row">
               <div id="cover-thumbnails" class="cover-thumbnails"></div>
               <label class="upload-tile" for="ed-cover-upload">
@@ -325,9 +345,8 @@
             </div>
           </div>
 
-          <!-- Passo 2: Título e Categoria -->
           <div class="easy-step-box">
-            <label class="easy-step-title">2. Título e Área do Texto</label>
+            <label class="easy-step-title">2. Título e Área</label>
             <div class="form-row-2">
               <div class="form-group">
                 <label for="ed-title">Título da Publicação</label>
@@ -343,34 +362,32 @@
               </div>
             </div>
             <div class="form-group" style="margin-top:10px">
-              <label for="ed-subtitle">Chamada curta (1 frase explicando o assunto)</label>
+              <label for="ed-subtitle">Chamada curta (1 frase)</label>
               <input type="text" id="ed-subtitle" name="subtitle" placeholder="Ex: O que conferir antes de liberar a equipe para o serviço..." required />
             </div>
           </div>
 
-          <!-- Passo 3: Resumo em 30 segundos -->
           <div class="easy-step-box">
-            <label class="easy-step-title">3. Resumo Rápido (aparece destacado no topo do artigo)</label>
+            <label class="easy-step-title">3. Resumo Rápido (topo do artigo)</label>
             <div class="form-group">
-              <label for="ed-summary">Escreva os pontos principais (um por linha)</label>
+              <label for="ed-summary">Pontos principais (um por linha)</label>
               <textarea id="ed-summary" name="summary" rows="3" placeholder="Primeiro ponto importante...&#10;Segundo ponto importante...&#10;Terceiro ponto importante..." required></textarea>
             </div>
             <div class="form-group" style="margin-top:10px">
               <label for="ed-tip">Dica Prática do Cleilson (opcional)</label>
-              <input type="text" id="ed-tip" name="practicalTip" placeholder="Uma orientação direta para aplicar no campo..." />
+              <input type="text" id="ed-tip" name="practicalTip" placeholder="Orientação direta para aplicar no campo..." />
             </div>
           </div>
 
-          <!-- Passo 4: Texto Completo com Barra de Formatação Fácil -->
           <div class="easy-step-box">
-            <label class="easy-step-title">4. Escreva o Texto Completo</label>
-            <div class="easy-toolbar" aria-label="Ferramentas de formatação fáceis">
-              <button type="button" class="tool-chip" data-insert="subtitle">+ Adicionar Subtítulo</button>
+            <label class="easy-step-title">4. Texto Completo</label>
+            <div class="easy-toolbar">
+              <button type="button" class="tool-chip" data-insert="subtitle">+ Subtítulo</button>
               <button type="button" class="tool-chip" data-insert="bold">Negrito</button>
               <button type="button" class="tool-chip" data-insert="callout">+ Caixa de Destaque</button>
               <button type="button" class="tool-chip" data-insert="checklist">+ Lista de Verificação</button>
             </div>
-            <textarea id="ed-body" name="body" rows="7" placeholder="Escreva seu texto normalmente aqui. Para criar um novo parágrafo, dê duas vezes Enter." required></textarea>
+            <textarea id="ed-body" name="body" rows="6" placeholder="Escreva seu texto normalmente aqui. Dê dois Enter para separar parágrafos." required></textarea>
           </div>
 
           <div class="editor-actions">
@@ -379,22 +396,21 @@
           </div>
         </form>
 
-        <!-- Lista Simples para Editar ou Excluir Textos Já Publicados -->
         <div class="manage-posts-box">
-          <h4>Publicações no Site (clique para editar ou remover)</h4>
+          <h4>Publicações Anteriores (edite o texto, substitua a capa ou remova)</h4>
           <div id="manage-posts-list" class="manage-posts-list"></div>
         </div>
       </div>
 
-      <!-- ABA 2: BANCO DE IMAGENS & CARTAZES -->
+      <!-- ABA 2: BANCO DE IMAGENS -->
       <div id="studio-panel-images" class="studio-panel" hidden>
         <form id="image-bank-form" class="editor-form">
           <div class="easy-step-box">
-            <label class="easy-step-title">Enviar Nova Imagem ou Infográfico para o Banco de Imagens</label>
+            <label class="easy-step-title">Adicionar Nova Imagem ou Cartaz ao Banco de Imagens</label>
             <label class="dropzone-box" for="bank-file-input" id="bank-dropzone">
               <span style="font-size:1.5rem">🖼️</span>
               <strong>Clique aqui ou arraste uma imagem do computador/celular</strong>
-              <small>A imagem fica salva no Banco de Imagens e disponível para compartilhar no WhatsApp/Instagram ou usar em artigos.</small>
+              <small>A imagem fica salva no Banco de Imagens e disponível para capas e compartilhamento.</small>
               <input type="file" id="bank-file-input" accept="image/*" hidden />
             </label>
             <div id="bank-file-preview" class="bank-file-preview" hidden>
@@ -402,17 +418,17 @@
             </div>
             <div class="form-row-2" style="margin-top:12px">
               <div class="form-group">
-                <label for="bank-title">Título da Imagem / Cartaz</label>
+                <label for="bank-title">Título da Imagem</label>
                 <input type="text" id="bank-title" name="title" placeholder="Ex: Cartaz de Uso de EPI no Convés" required />
               </div>
               <div class="form-group">
-                <label for="bank-hashtag">Hashtag / Tag</label>
-                <input type="text" id="bank-hashtag" name="hashtag" placeholder="Ex: #NR37 #Offshore" value="#SegurancaDoTrabalho" />
+                <label for="bank-hashtag">Hashtag</label>
+                <input type="text" id="bank-hashtag" name="hashtag" value="#SegurancaDoTrabalho" />
               </div>
             </div>
             <div class="form-group" style="margin-top:10px">
-              <label for="bank-caption">Legenda curta</label>
-              <input type="text" id="bank-caption" name="caption" placeholder="Breve explicação da imagem para o público..." required />
+              <label for="bank-caption">Legenda</label>
+              <input type="text" id="bank-caption" name="caption" placeholder="Breve descrição..." required />
             </div>
             <div class="editor-actions" style="margin-top:12px">
               <button type="submit" class="btn btn-primary">+ Salvar no Banco de Imagens</button>
@@ -421,19 +437,88 @@
         </form>
 
         <div class="manage-posts-box">
-          <h4>Imagens Salvas no Banco</h4>
+          <h4>Imagens Salvas</h4>
           <div id="manage-images-list" class="manage-posts-list"></div>
         </div>
       </div>
 
-      <!-- ABA 3: CONECTAR INSTAGRAM & GOOGLE ANALYTICS -->
+      <!-- ABA 3: PERFIL DO CLEILSON & SEGURANÇA DO PROPRIETÁRIO -->
+      <div id="studio-panel-profile" class="studio-panel" hidden>
+        <form id="profile-config-form" class="editor-form">
+          <div class="easy-step-box">
+            <label class="easy-step-title">👤 Dados, Foto e Histórico do Cleilson ("Sobre o Cleilson")</label>
+            <div class="profile-avatar-editor">
+              <img id="prof-avatar-preview" src="assets/images/author-cleilson.jpg" alt="Foto de perfil" />
+              <div>
+                <label class="btn btn-outline-dark btn-sm" for="prof-avatar-upload" style="cursor:pointer">
+                  📷 Trocar Foto de Perfil
+                  <input type="file" id="prof-avatar-upload" accept="image/*" hidden />
+                </label>
+                <small style="display:block; margin-top:6px; color:var(--text-muted)">Atualiza a foto na capa, na lateral e nos artigos.</small>
+              </div>
+            </div>
+            <input type="hidden" id="prof-avatar-value" name="avatar" />
+
+            <div class="form-row-2" style="margin-top:14px">
+              <div class="form-group">
+                <label for="prof-name">Nome de Assinatura</label>
+                <input type="text" id="prof-name" name="name" required />
+              </div>
+              <div class="form-group">
+                <label for="prof-role">Cargo / Especialidade</label>
+                <input type="text" id="prof-role" name="role" required />
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:10px">
+              <label for="prof-headline">Título da Seção "Sobre o Cleilson"</label>
+              <input type="text" id="prof-headline" name="aboutHeadline" required />
+            </div>
+            <div class="form-group" style="margin-top:10px">
+              <label for="prof-bio">Descrição Principal</label>
+              <textarea id="prof-bio" name="bio" rows="3" required></textarea>
+            </div>
+            <div class="form-group" style="margin-top:10px">
+              <label for="prof-history">Histórico Profissional / Experiência em Campo</label>
+              <textarea id="prof-history" name="history" rows="3"></textarea>
+            </div>
+            <div class="form-group" style="margin-top:10px">
+              <label for="prof-short-bio">Resumo Curto (cartão da barra lateral)</label>
+              <input type="text" id="prof-short-bio" name="shortBio" required />
+            </div>
+            <div class="editor-actions" style="margin-top:12px">
+              <button type="submit" class="btn btn-primary btn-sm">✓ Salvar Perfil do Cleilson</button>
+            </div>
+          </div>
+        </form>
+
+        <form id="owner-security-form" class="editor-form" style="margin-top:14px">
+          <div class="easy-step-box">
+            <label class="easy-step-title">🔐 E-mail Autorizado e Chave de Acesso do Proprietário</label>
+            <p class="studio-hint" style="margin-top:4px">
+              Somente este e-mail consegue desbloquear a Área do Editor (dando 5 cliques no logo <strong>CLEILSON TST</strong> ou usando <code>Ctrl + Shift + E</code>).
+            </p>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="sec-email">E-mail Exclusivo do Proprietário</label>
+                <input type="email" id="sec-email" name="ownerEmail" required />
+              </div>
+              <div class="form-group">
+                <label for="sec-pass">Nova Chave de Acesso (deixe vazio p/ manter a atual)</label>
+                <input type="password" id="sec-pass" name="newPasscode" placeholder="Nova senha..." />
+              </div>
+            </div>
+            <div class="editor-actions" style="margin-top:12px">
+              <button type="submit" class="btn btn-dark btn-sm">Atualizar E-mail / Senha</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- ABA 4: INSTAGRAM, GOOGLE ANALYTICS & GOOGLE ADSENSE -->
       <div id="studio-panel-integrations" class="studio-panel" hidden>
         <form id="instagram-config-form" class="editor-form">
           <div class="easy-step-box">
-            <label class="easy-step-title">📲 Integração com Instagram (puxar imagens por @ e #hashtag)</label>
-            <p class="studio-hint" style="margin-top:4px">
-              Informe o <strong>@</strong> da conta principal do Instagram e a <strong>#hashtag</strong> que identifica as imagens que devem aparecer automaticamente no site. Para sincronização automática sem servidor, cole o link de feed JSON gratuito (ex: <em>Behold.so</em> conectado à conta).
-            </p>
+            <label class="easy-step-title">📲 Integração com Instagram (@ e #hashtag)</label>
             <div class="form-row-2">
               <div class="form-group">
                 <label for="ig-handle">@ Conta do Instagram</label>
@@ -446,7 +531,7 @@
             </div>
             <div class="form-group" style="margin-top:10px">
               <label for="ig-feed-url">Link do Feed JSON do Instagram (opcional — Behold.so / Graph API)</label>
-              <input type="url" id="ig-feed-url" name="feedUrl" placeholder="https://feeds.behold.so/SEU-ID-AQUI" />
+              <input type="url" id="ig-feed-url" name="feedUrl" placeholder="https://feeds.behold.so/SEU-ID" />
             </div>
             <div class="editor-actions" style="margin-top:12px">
               <button type="button" id="sync-instagram-btn" class="btn btn-outline-dark btn-sm">Sincronizar Instagram Agora</button>
@@ -457,22 +542,26 @@
 
         <form id="analytics-config-form" class="editor-form" style="margin-top:14px">
           <div class="easy-step-box">
-            <label class="easy-step-title">📊 Indicadores Reais (Google Analytics / Leitores Mensais)</label>
+            <label class="easy-step-title">📊 Google Analytics &amp; Google Ads (AdSense)</label>
             <p class="studio-hint" style="margin-top:4px">
-              O indicador de <strong>Leitores Mensais</strong> só aparece no site quando atingir <strong>pelo menos 500 leitores reais</strong>. Abaixo de 500, ele permanece oculto para manter credibilidade total.
+              Leitores Mensais só aparecem no site ao atingir <strong>500+ leitores reais</strong>.
             </p>
             <div class="form-row-2">
               <div class="form-group">
-                <label for="ga-id">ID do Google Analytics (GA4 — opcional)</label>
+                <label for="ga-id">ID Google Analytics (GA4)</label>
                 <input type="text" id="ga-id" name="gaMeasurementId" placeholder="G-XXXXXXXXXX" />
               </div>
               <div class="form-group">
-                <label for="real-readers">Leitores Mensais Verificados (Google Analytics)</label>
+                <label for="real-readers">Leitores Mensais Verificados</label>
                 <input type="number" id="real-readers" name="monthlyReaders" min="0" placeholder="0" />
               </div>
             </div>
+            <div class="form-group" style="margin-top:10px">
+              <label for="ads-pub-id">ID do Publicador Google AdSense (opcional)</label>
+              <input type="text" id="ads-pub-id" name="publisherId" placeholder="ca-pub-0000000000000000" />
+            </div>
             <div class="editor-actions" style="margin-top:12px">
-              <button type="submit" class="btn btn-primary btn-sm">Salvar Indicadores</button>
+              <button type="submit" class="btn btn-primary btn-sm">Salvar Google &amp; Ads</button>
             </div>
           </div>
         </form>
@@ -480,7 +569,7 @@
     </div>
   </div>
 
-  <!-- MODAL: LIGHTBOX DE IMAGEM (VISUALIZAR & COMPARTILHAR WHATSAPP/INSTAGRAM) -->
+  <!-- MODAL: LIGHTBOX DE IMAGEM -->
   <div id="image-lightbox-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="lightbox-title">
     <div class="modal-dialog modal-lg">
       <div class="modal-header">
@@ -506,11 +595,12 @@
   <div id="privacy-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3 id="privacy-modal-title">Política de Privacidade</h3>
+        <h3 id="privacy-modal-title">Política de Privacidade &amp; Cookies</h3>
         <button type="button" class="modal-close" data-close-modal="privacy-modal" aria-label="Fechar">✕</button>
       </div>
       <div class="modal-body-text">
         <p>O portal <strong>Cleilson TST</strong> respeita a sua privacidade em conformidade com a LGPD (Lei nº 13.709/2018).</p>
+        <p><strong>Publicidade (Google Ads / AdSense):</strong> Este site reserva espaços para anúncios contextuais do Google Ads relacionados a Segurança do Trabalho, Engenharia e Indústria, que podem utilizar cookies conforme as políticas do Google.</p>
         <p><strong>Cadastro de E-mail:</strong> Os e-mails cadastrados para aviso de novas publicações nunca são compartilhados ou vendidos a terceiros.</p>
         <p><strong>Responsabilidade Técnica:</strong> Os artigos e materiais visuais têm caráter informativo e educacional. Consulte sempre as Normas Regulamentadoras vigentes e o SESMT da sua unidade antes de executar atividades críticas.</p>
       </div>

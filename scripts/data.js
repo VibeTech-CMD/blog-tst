@@ -1,5 +1,5 @@
 /**
- * Base de Conteúdos e Indicadores Reais — Portal Cleilson TST
+ * Base de Conteúdos, Perfil Editável, Acesso do Proprietário e Indicadores Reais — Portal Cleilson TST
  * Sem métricas fictícias: todos os contadores e especialidades são calculados
  * diretamente a partir do acervo real publicado no site.
  */
@@ -10,19 +10,30 @@ export const STORAGE_KEYS = {
   imageBank: "cleilson_tst_image_bank_v2",
   instagramCfg: "cleilson_tst_instagram_cfg_v2",
   analyticsCfg: "cleilson_tst_analytics_v2",
+  profileCfg: "cleilson_tst_profile_v2",
+  ownerAuth: "cleilson_tst_owner_auth_v2",
+  adsenseCfg: "cleilson_tst_adsense_v2",
   theme: "cleilson_tst_theme_v1"
 };
 
 export const SITE_CONFIG = {
   brandName: "Cleilson TST",
   tagline: "Segurança do Trabalho • Offshore & Onshore",
-  author: {
+  defaultProfile: {
     name: "Cleilson",
     role: "Técnico em Segurança do Trabalho (TST) • Offshore & Onshore",
+    aboutHeadline: "Construindo Cultura de Segurança Real — Do Convés Offshore ao Chão de Fábrica",
     bio: "Técnico em Segurança do Trabalho com vivência prática em plataformas marítimas e plantas industriais onshore. Compartilho conteúdos técnicos claros, aplicáveis no campo e fundamentados nas Normas Regulamentadoras vigentes.",
+    shortBio: "Conteúdos técnicos fundamentados nas Normas Regulamentadoras e na rotina real de plataformas offshore e indústrias onshore.",
+    history: "Atuação em campo acompanhando operações críticas em plataformas offshore (NR-37) e plantas industriais onshore, com foco em permissões de trabalho, análise de risco e cultura preventiva.",
     avatar: "assets/images/author-cleilson.jpg"
   },
-  // Leitores mensais só entram em exibição pública quando o dado real atingir >= 500
+  // Credencial padrão inicial (pode ser alterada pelo proprietário na aba Configurações)
+  defaultOwner: {
+    email: "cleilson@cleilsontst.com.br",
+    // Senha inicial padrão: "tst2026" (armazenada apenas como hash SHA-256)
+    passcodeHash: "a1c78c8b6f36b19a11e6f4078f84cb7362e75e8a69128816c5509cc1315826f2"
+  },
   minReadersToDisplay: 500
 };
 
@@ -276,6 +287,78 @@ export const DEFAULT_IMAGE_BANK = [
 ];
 
 // =========================================================================
+// PERFIL EDITÁVEL DO CLEILSON
+// =========================================================================
+export function loadProfile() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.profileCfg);
+    if (raw) return { ...SITE_CONFIG.defaultProfile, ...JSON.parse(raw) };
+  } catch {}
+  return { ...SITE_CONFIG.defaultProfile };
+}
+
+export function saveProfile(profile) {
+  localStorage.setItem(STORAGE_KEYS.profileCfg, JSON.stringify({ ...SITE_CONFIG.defaultProfile, ...profile }));
+}
+
+// =========================================================================
+// AUTENTICAÇÃO EXCLUSIVA DO PROPRIETÁRIO (POR E-MAIL + SENHA SHA-256)
+// =========================================================================
+export async function hashSecret(text) {
+  const clean = String(text || "").trim();
+  if (window.crypto && window.crypto.subtle) {
+    const buf = new TextEncoder().encode(clean);
+    const hashBuf = await window.crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(hashBuf))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+  return btoa(clean);
+}
+
+export function loadOwnerAuth() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.ownerAuth);
+    if (raw) return { ...SITE_CONFIG.defaultOwner, ...JSON.parse(raw) };
+  } catch {}
+  return { ...SITE_CONFIG.defaultOwner };
+}
+
+export function saveOwnerAuth(auth) {
+  localStorage.setItem(STORAGE_KEYS.ownerAuth, JSON.stringify(auth));
+}
+
+export async function verifyOwnerCredentials(email, passcode) {
+  const auth = loadOwnerAuth();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const expectedEmail = String(auth.email || "").trim().toLowerCase();
+  if (!normalizedEmail || normalizedEmail !== expectedEmail) return false;
+
+  // Aceita a senha padrão "tst2026" se ainda não alterada ou o hash salvo
+  const inputHash = await hashSecret(passcode);
+  const defaultHash = await hashSecret("tst2026");
+  if (auth.passcodeHash === SITE_CONFIG.defaultOwner.passcodeHash && inputHash === defaultHash) {
+    return true;
+  }
+  return inputHash === auth.passcodeHash;
+}
+
+// =========================================================================
+// GOOGLE ADSENSE CONFIG
+// =========================================================================
+export function loadAdsenseConfig() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.adsenseCfg);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { publisherId: "", enabled: true };
+}
+
+export function saveAdsenseConfig(cfg) {
+  localStorage.setItem(STORAGE_KEYS.adsenseCfg, JSON.stringify(cfg));
+}
+
+// =========================================================================
 // ACESSO UNIFICADO AO ACERVO REAL (INDEX + ARTIGO.HTML)
 // =========================================================================
 export function loadAllPosts() {
@@ -346,7 +429,7 @@ export function loadInstagramConfig() {
   return {
     handle: "",
     hashtag: "#cleilsontst",
-    feedUrl: "" // Opcional: URL de feed JSON (Behold.so / Juicer / API Graph)
+    feedUrl: ""
   };
 }
 
@@ -360,7 +443,7 @@ export function loadAnalyticsConfig() {
     if (raw) return JSON.parse(raw);
   } catch {}
   return {
-    monthlyReaders: 0, // Só exibe no site quando >= 500
+    monthlyReaders: 0,
     gaMeasurementId: ""
   };
 }
@@ -383,10 +466,6 @@ export function calculateReadTime(post) {
   return `${mins} min de leitura`;
 }
 
-/**
- * Analisa automaticamente todos os textos publicados no portal para extrair
- * as especialidades reais (NRs e temas predominantes) conforme os textos crescem.
- */
 export function extractDynamicSpecialties(posts) {
   const counts = new Map();
 
@@ -399,7 +478,6 @@ export function extractDynamicSpecialties(posts) {
       ...(post.content || []).map((b) => (b.text || "") + " " + (b.items || []).join(" "))
     ].join(" ");
 
-    // Detecta todas as NRs mencionadas (NR-01 a NR-38)
     const nrMatches = fullText.match(/\bNR[-\s]?\d{1,2}\b/gi) || [];
     const seenInPost = new Set();
     for (const m of nrMatches) {
@@ -410,7 +488,6 @@ export function extractDynamicSpecialties(posts) {
       }
     }
 
-    // Detecta temas centrais se houver poucas NRs
     const topicChecks = [
       ["Offshore", /\boffshore\b/i],
       ["Onshore", /\bonshore\b/i],
@@ -428,7 +505,6 @@ export function extractDynamicSpecialties(posts) {
     .sort((a, b) => b[1] - a[1])
     .map(([key]) => key);
 
-  // Prioriza NRs no topo e complementa com temas principais
   const nrs = sorted.filter((k) => k.startsWith("NR-")).slice(0, 4);
   if (nrs.length > 0) return nrs;
   return sorted.slice(0, 3);

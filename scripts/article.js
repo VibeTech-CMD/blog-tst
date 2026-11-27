@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, loadAllPosts, calculateReadTime } from "./data.js";
+import { STORAGE_KEYS, loadAllPosts, loadProfile, calculateReadTime } from "./data.js";
 
 function escapeHtml(str = "") {
   return String(str)
@@ -57,7 +57,15 @@ function renderStandaloneArticle() {
     return;
   }
 
-  document.title = `${post.title} | Cleilson TST`;
+  const profile = loadProfile();
+  document.title = `${post.title} | ${profile.name} TST`;
+  document.getElementById("art-author-avatar-top").src = profile.avatar;
+  document.getElementById("art-author-name-top").textContent = `Por ${profile.name}`;
+  document.getElementById("art-author-role-top").textContent = profile.role;
+  document.getElementById("art-author-avatar-bottom").src = profile.avatar;
+  document.getElementById("art-author-name-bottom").textContent = `${profile.name} — ${profile.role}`;
+  document.getElementById("art-author-bio-bottom").textContent = profile.shortBio || profile.bio;
+
   document.getElementById("art-category-badge").textContent = post.categoryLabel;
   document.getElementById("art-date-read").textContent = `${post.date} • ${calculateReadTime(post)}`;
   document.getElementById("art-title").textContent = post.title;
@@ -83,22 +91,31 @@ function renderStandaloneArticle() {
   img.alt = post.title;
   document.getElementById("art-image-caption").textContent = post.imageCaption || "";
 
-  const bodyHtml = (post.content || [])
-    .map((block) => {
-      if (block.type === "h2") return `<h2>${escapeHtml(block.text)}</h2>`;
-      if (block.type === "callout") {
-        return `<div class="article-callout"><strong>${escapeHtml(block.title || "Destaque")}</strong><span>${escapeHtml(block.text)}</span></div>`;
-      }
-      if (block.type === "checklist") {
-        const items = (block.items || []).map((i) => `<li>${escapeHtml(i)}</li>`).join("");
-        return `<div class="article-checklist"><h3>${escapeHtml(block.title || "Lista de Verificação")}</h3><ul>${items}</ul></div>`;
-      }
-      // Suporta **negrito** simples inserido pelo editor intuitivo
+  const bodyChunks = [];
+  (post.content || []).forEach((block, idx) => {
+    if (block.type === "h2") {
+      bodyChunks.push(`<h2>${escapeHtml(block.text)}</h2>`);
+    } else if (block.type === "callout") {
+      bodyChunks.push(`<div class="article-callout"><strong>${escapeHtml(block.title || "Destaque")}</strong><span>${escapeHtml(block.text)}</span></div>`);
+    } else if (block.type === "checklist") {
+      const items = (block.items || []).map((i) => `<li>${escapeHtml(i)}</li>`).join("");
+      bodyChunks.push(`<div class="article-checklist"><h3>${escapeHtml(block.title || "Lista de Verificação")}</h3><ul>${items}</ul></div>`);
+    } else {
       const formatted = escapeHtml(block.text || "").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-      return `<p>${formatted}</p>`;
-    })
-    .join("");
-  document.getElementById("art-body").innerHTML = bodyHtml;
+      bodyChunks.push(`<p>${formatted}</p>`);
+    }
+
+    // Espaço pré-definido Google Ads In-Article (após o 2º bloco)
+    if (idx === 1) {
+      bodyChunks.push(`
+        <aside class="ad-slot ad-google-clean ad-in-article" data-ad-slot="in-article" aria-label="Publicidade Google Ads">
+          <div class="ad-badge">GOOGLE ADS • ESPAÇO IN-ARTICLE (TEMAS SST &amp; INDÚSTRIA)</div>
+          <div class="ad-placeholder-clean">Espaço reservado para anúncio contextual do Google Ads relacionado ao tema deste artigo.</div>
+        </aside>
+      `);
+    }
+  });
+  document.getElementById("art-body").innerHTML = bodyChunks.join("");
 
   // Relacionados (abrem na própria página independente)
   const related = posts.filter((p) => p.slug !== post.slug).slice(0, 2);

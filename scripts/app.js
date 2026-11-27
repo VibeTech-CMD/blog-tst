@@ -1,6 +1,14 @@
 import {
   STORAGE_KEYS,
   SITE_CONFIG,
+  loadProfile,
+  saveProfile,
+  loadOwnerAuth,
+  saveOwnerAuth,
+  verifyOwnerCredentials,
+  hashSecret,
+  loadAdsenseConfig,
+  saveAdsenseConfig,
   loadAllPosts,
   saveCustomPost,
   deletePostById,
@@ -14,30 +22,59 @@ import {
   computeRealMetrics
 } from "./data.js";
 
+const SESSION_OWNER_KEY = "cleilson_tst_owner_session_v2";
+
 const state = {
   posts: [],
   imageBank: [],
+  profile: loadProfile(),
   category: "all",
   imageFilter: "all",
   search: "",
   pendingBankImageDataUrl: "",
-  activeLightboxItem: null
+  quickCoverTargetPostId: null,
+  activeLightboxItem: null,
+  ownerAuthenticated: sessionStorage.getItem(SESSION_OWNER_KEY) === "1"
 };
 
 const els = {
   readingProgress: document.getElementById("reading-progress"),
+  ownerSessionBar: document.getElementById("owner-session-bar"),
+  ownerLoggedEmail: document.getElementById("owner-logged-email"),
+  ownerOpenStudioBtn: document.getElementById("owner-open-studio-btn"),
+  ownerLogoutBtn: document.getElementById("owner-logout-btn"),
+  brandLogo: document.getElementById("brand-logo"),
+  footerSecretBrand: document.getElementById("footer-secret-brand"),
+
   heroFeatured: document.getElementById("hero-featured"),
   postsGrid: document.getElementById("posts-grid"),
   feedStatus: document.getElementById("feed-status"),
   recentList: document.getElementById("recent-list"),
   instagramStatusBar: document.getElementById("instagram-status-bar"),
   imageBankGrid: document.getElementById("image-bank-grid"),
+
+  // Perfil dinâmico na página
+  sidebarAuthorAvatar: document.getElementById("sidebar-author-avatar"),
+  sidebarAuthorName: document.getElementById("sidebar-author-name"),
+  sidebarAuthorRole: document.getElementById("sidebar-author-role"),
+  sidebarAuthorBio: document.getElementById("sidebar-author-bio"),
+  aboutAuthorAvatar: document.getElementById("about-author-avatar"),
+  aboutAuthorBadgeName: document.getElementById("about-author-badge-name"),
+  aboutAuthorBadgeRole: document.getElementById("about-author-badge-role"),
+  aboutHeadline: document.getElementById("about-headline"),
   aboutBioText: document.getElementById("about-bio-text"),
+  aboutHistoryText: document.getElementById("about-history-text"),
   aboutStats: document.getElementById("about-stats"),
+
   searchInput: document.getElementById("search-input"),
   themeToggle: document.getElementById("theme-toggle"),
   mobileMenuBtn: document.getElementById("mobile-menu-btn"),
   mainNav: document.getElementById("main-nav"),
+
+  // Login Oculto do Proprietário
+  ownerLoginModal: document.getElementById("owner-login-modal"),
+  ownerLoginForm: document.getElementById("owner-login-form"),
+  ownerLoginError: document.getElementById("owner-login-error"),
 
   // Editor Intuitivo
   editorModal: document.getElementById("editor-modal"),
@@ -51,6 +88,7 @@ const els = {
   edBody: document.getElementById("ed-body"),
   edImageValue: document.getElementById("ed-image-value"),
   edCoverUpload: document.getElementById("ed-cover-upload"),
+  quickCoverFile: document.getElementById("quick-cover-file"),
   coverThumbnails: document.getElementById("cover-thumbnails"),
   coverPreviewImg: document.getElementById("cover-preview-img"),
   coverPreviewLabel: document.getElementById("cover-preview-label"),
@@ -66,7 +104,14 @@ const els = {
   bankPreviewImg: document.getElementById("bank-preview-img"),
   manageImagesList: document.getElementById("manage-images-list"),
 
-  // Instagram & Analytics
+  // Perfil & Segurança no Editor
+  profileConfigForm: document.getElementById("profile-config-form"),
+  profAvatarPreview: document.getElementById("prof-avatar-preview"),
+  profAvatarUpload: document.getElementById("prof-avatar-upload"),
+  profAvatarValue: document.getElementById("prof-avatar-value"),
+  ownerSecurityForm: document.getElementById("owner-security-form"),
+
+  // Instagram & Analytics & AdSense
   instagramConfigForm: document.getElementById("instagram-config-form"),
   syncInstagramBtn: document.getElementById("sync-instagram-btn"),
   analyticsConfigForm: document.getElementById("analytics-config-form"),
@@ -108,24 +153,20 @@ function articleUrl(slug) {
   return `artigo.html?post=${encodeURIComponent(slug)}`;
 }
 
-/**
- * Converte imagem enviada pelo usuário em JPEG leve (max 1200px) para salvar rápido e sem travar
- */
-function readAndCompressImage(file) {
+function readAndCompressImage(file, maxW = 1200) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        const maxW = 1200;
         const scale = img.width > maxW ? maxW / img.width : 1;
         const canvas = document.createElement("canvas");
         canvas.width = Math.round(img.width * scale);
         canvas.height = Math.round(img.height * scale);
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.82));
+        resolve(canvas.toDataURL("image/jpeg", 0.84));
       };
       img.onerror = () => resolve(reader.result);
       img.src = reader.result;
@@ -134,7 +175,6 @@ function readAndCompressImage(file) {
   });
 }
 
-// Converte texto do editor fácil em blocos estruturados
 function parseEasyEditorBody(rawText) {
   const chunks = String(rawText)
     .split(/\n\s*\n/)
@@ -146,7 +186,7 @@ function parseEasyEditorBody(rawText) {
       return { type: "h2", text: chunk.replace(/^##\s+/, "").trim() };
     }
     if (chunk.startsWith("DESTAQUE:")) {
-      return { type: "callout", title: "Destaque do Cleilson", text: chunk.replace(/^DESTAQUE:\s*/i, "").trim() };
+      return { type: "callout", title: `Destaque de ${state.profile.name}`, text: chunk.replace(/^DESTAQUE:\s*/i, "").trim() };
     }
     if (chunk.split("\n").every((line) => /^[-•*]\s+/.test(line.trim()))) {
       return {
@@ -171,10 +211,68 @@ function serializeBlocksToEasyText(blocks = []) {
 }
 
 // =========================================================================
-// RENDERIZAÇÃO PRINCIPAL (SEM NÚMEROS FALSOS)
+// ACESSO RESTRITO AO PROPRIETÁRIO (GATILHO OCULTO + E-MAIL AUTORIZADO)
 // =========================================================================
+function updateOwnerBar() {
+  const auth = loadOwnerAuth();
+  if (state.ownerAuthenticated) {
+    els.ownerSessionBar.hidden = false;
+    els.ownerLoggedEmail.textContent = auth.email;
+  } else {
+    els.ownerSessionBar.hidden = true;
+  }
+}
+
+function requestOwnerAccess(defaultTab = "write") {
+  if (state.ownerAuthenticated) {
+    openEditor(defaultTab);
+    return;
+  }
+  els.ownerLoginError.hidden = true;
+  els.ownerLoginForm.reset();
+  els.ownerLoginModal.hidden = false;
+  setTimeout(() => document.getElementById("login-owner-email")?.focus(), 80);
+}
+
+function setupSecretTrigger(element) {
+  if (!element) return;
+  let clicks = 0;
+  let timer = null;
+  element.addEventListener("click", (e) => {
+    clicks += 1;
+    clearTimeout(timer);
+    if (clicks >= 5) {
+      e.preventDefault();
+      clicks = 0;
+      requestOwnerAccess("write");
+      return;
+    }
+    timer = setTimeout(() => {
+      clicks = 0;
+    }, 2200);
+  });
+}
+
+// =========================================================================
+// RENDERIZAÇÃO DE PERFIL DINÂMICO, INDICADORES REAIS E PORTAL
+// =========================================================================
+function renderProfile() {
+  const p = state.profile;
+  els.sidebarAuthorAvatar.src = p.avatar;
+  els.sidebarAuthorName.textContent = p.name;
+  els.sidebarAuthorRole.textContent = p.role;
+  els.sidebarAuthorBio.textContent = p.shortBio;
+
+  els.aboutAuthorAvatar.src = p.avatar;
+  els.aboutAuthorBadgeName.textContent = `${p.name} TST`;
+  els.aboutAuthorBadgeRole.textContent = p.role;
+  els.aboutHeadline.textContent = p.aboutHeadline;
+  els.aboutBioText.textContent = p.bio;
+  els.aboutHistoryText.textContent = p.history || "";
+  els.aboutHistoryText.hidden = !p.history;
+}
+
 function renderRealIndicators() {
-  els.aboutBioText.textContent = SITE_CONFIG.author.bio;
   const m = computeRealMetrics(state.posts, state.imageBank);
 
   const cards = [
@@ -184,7 +282,6 @@ function renderRealIndicators() {
     }
   ];
 
-  // Regra estrita: Leitores Mensais só aparece após atingir >= 500 leitores reais
   if (m.showMonthlyReaders) {
     cards.push({
       value: m.monthlyReaders.toLocaleString("pt-BR"),
@@ -212,7 +309,7 @@ function renderRealIndicators() {
 function renderHero() {
   const featured = state.posts.find((p) => p.featured) || state.posts[0];
   if (!featured) {
-    els.heroFeatured.innerHTML = `<div style="padding:36px">Nenhuma publicação disponível ainda. Use a Área do Editor para publicar seu primeiro texto.</div>`;
+    els.heroFeatured.innerHTML = `<div style="padding:36px">Nenhuma publicação disponível ainda.</div>`;
     return;
   }
 
@@ -229,7 +326,7 @@ function renderHero() {
     </a>
     <div class="hero-content">
       <div class="hero-meta">
-        <span>Por <strong>Cleilson</strong></span>
+        <span>Por <strong>${escapeHtml(state.profile.name)}</strong></span>
         <span>•</span>
         <span>${escapeHtml(featured.date)}</span>
         <span>•</span>
@@ -314,39 +411,25 @@ function renderRecentList() {
     .join("");
 }
 
-// =========================================================================
-// BANCO DE IMAGENS & INTEGRAÇÃO INSTAGRAM (@ E #HASHTAG)
-// =========================================================================
 function renderInstagramBar() {
   const cfg = loadInstagramConfig();
-  if (cfg.handle || cfg.feedUrl) {
-    els.instagramStatusBar.innerHTML = `
-      <div class="ig-status-info">
-        <span class="ig-dot connected"></span>
-        <span>
-          <strong>Instagram conectado:</strong> ${escapeHtml(cfg.handle || "Conta vinculada")}
-          ${cfg.hashtag ? ` • Filtro: <strong>${escapeHtml(cfg.hashtag)}</strong>` : ""}
-        </span>
-      </div>
-      <div class="ig-status-actions">
-        ${cfg.feedUrl ? `<button type="button" id="quick-sync-ig" class="btn btn-outline-dark btn-sm">↻ Atualizar do Instagram</button>` : ""}
-        <button type="button" id="quick-edit-ig" class="card-listen-btn">Configurar</button>
-      </div>
-    `;
-  } else {
-    els.instagramStatusBar.innerHTML = `
-      <div class="ig-status-info">
-        <span class="ig-dot"></span>
-        <span><strong>Integração Instagram disponível:</strong> conecte o <strong>@</strong> da conta e uma <strong>#hashtag</strong> para puxar cartazes e infográficos automaticamente.</span>
-      </div>
-      <button type="button" id="quick-edit-ig" class="btn btn-outline-dark btn-sm">Conectar Agora</button>
-    `;
+  if (!cfg.handle && !cfg.feedUrl) {
+    els.instagramStatusBar.hidden = true;
+    return;
   }
-
+  els.instagramStatusBar.hidden = false;
+  els.instagramStatusBar.innerHTML = `
+    <div class="ig-status-info">
+      <span class="ig-dot connected"></span>
+      <span>
+        <strong>Instagram oficial:</strong> ${escapeHtml(cfg.handle || "Conectado")}
+        ${cfg.hashtag ? ` • Tag: <strong>${escapeHtml(cfg.hashtag)}</strong>` : ""}
+      </span>
+    </div>
+    ${cfg.feedUrl ? `<button type="button" id="quick-sync-ig" class="btn btn-outline-dark btn-sm">↻ Atualizar Galeria</button>` : ""}
+  `;
   const qSync = document.getElementById("quick-sync-ig");
   if (qSync) qSync.addEventListener("click", syncInstagramFeed);
-  const qEdit = document.getElementById("quick-edit-ig");
-  if (qEdit) qEdit.addEventListener("click", () => openEditor("integrations"));
 }
 
 function renderImageBank() {
@@ -355,7 +438,7 @@ function renderImageBank() {
   if (visible.length === 0) {
     els.imageBankGrid.innerHTML = `
       <div class="sidebar-card" style="grid-column: 1 / -1; text-align:center; padding: 32px;">
-        <p style="margin:0; color:var(--text-secondary)">Nenhuma imagem nesta aba ainda. Clique em <strong>+ Adicionar Imagem</strong> ou sincronize seu Instagram.</p>
+        <p style="margin:0; color:var(--text-secondary)">Nenhuma imagem disponível nesta categoria.</p>
       </div>`;
     return;
   }
@@ -423,9 +506,7 @@ async function syncInstagramFeed() {
     const existingPortal = state.imageBank.filter((i) => i.source !== "instagram");
     state.imageBank = [...imported, ...existingPortal];
     saveImageBank(state.imageBank);
-    renderImageBank();
-    renderManageLists();
-    renderRealIndicators();
+    refreshAllViews();
     showToast(`✓ ${imported.length} imagem(ns) importada(s) do Instagram!`);
   } catch (err) {
     showToast(err.message || "Erro ao sincronizar Instagram.");
@@ -447,14 +528,18 @@ function openLightbox(id) {
 }
 
 // =========================================================================
-// ÁREA DO EDITOR INTUITIVA (PARA PESSOA LEIGA)
+// ÁREA DO EDITOR (EXCLUSIVA DO PROPRIETÁRIO)
 // =========================================================================
 function openEditor(tab = "write") {
+  if (!state.ownerAuthenticated) {
+    requestOwnerAccess(tab);
+    return;
+  }
   els.editorModal.hidden = false;
   switchStudioTab(tab);
   renderCoverThumbnails();
   renderManageLists();
-  syncIntegrationForms();
+  syncProfileAndIntegrationForms();
 }
 
 function switchStudioTab(tabName) {
@@ -492,11 +577,15 @@ function renderManageLists() {
     .map(
       (p) => `
       <div class="manage-row">
-        <div>
-          <strong>${escapeHtml(p.title)}</strong>
-          <small>${escapeHtml(p.categoryLabel)} • ${escapeHtml(p.date)}</small>
+        <div class="manage-img-info">
+          <img src="${escapeHtml(p.image)}" alt="" />
+          <div>
+            <strong>${escapeHtml(p.title)}</strong>
+            <small>${escapeHtml(p.categoryLabel)} • ${escapeHtml(p.date)}</small>
+          </div>
         </div>
         <div class="manage-row-actions">
+          <button type="button" class="card-listen-btn" data-quick-cover="${escapeHtml(p.id)}" title="Substituir apenas a imagem de capa">🖼️ Trocar Capa</button>
           <button type="button" class="card-listen-btn" data-edit-post="${escapeHtml(p.id)}">Editar</button>
           <button type="button" class="card-listen-btn btn-danger-soft" data-delete-post="${escapeHtml(p.id)}">Excluir</button>
         </div>
@@ -545,7 +634,21 @@ function loadPostIntoEditor(id) {
   els.editorModal.querySelector(".modal-dialog").scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function syncIntegrationForms() {
+function syncProfileAndIntegrationForms() {
+  const p = loadProfile();
+  els.profAvatarPreview.src = p.avatar;
+  els.profAvatarValue.value = p.avatar;
+  document.getElementById("prof-name").value = p.name;
+  document.getElementById("prof-role").value = p.role;
+  document.getElementById("prof-headline").value = p.aboutHeadline;
+  document.getElementById("prof-bio").value = p.bio;
+  document.getElementById("prof-history").value = p.history || "";
+  document.getElementById("prof-short-bio").value = p.shortBio;
+
+  const auth = loadOwnerAuth();
+  document.getElementById("sec-email").value = auth.email;
+  document.getElementById("sec-pass").value = "";
+
   const ig = loadInstagramConfig();
   document.getElementById("ig-handle").value = ig.handle || "";
   document.getElementById("ig-hashtag").value = ig.hashtag || "#cleilsontst";
@@ -554,11 +657,17 @@ function syncIntegrationForms() {
   const ga = loadAnalyticsConfig();
   document.getElementById("ga-id").value = ga.gaMeasurementId || "";
   document.getElementById("real-readers").value = ga.monthlyReaders || 0;
+
+  const ads = loadAdsenseConfig();
+  document.getElementById("ads-pub-id").value = ads.publisherId || "";
 }
 
 function refreshAllViews() {
   state.posts = loadAllPosts();
   state.imageBank = loadImageBank();
+  state.profile = loadProfile();
+  updateOwnerBar();
+  renderProfile();
   renderHero();
   renderFeed();
   renderRecentList();
@@ -583,17 +692,45 @@ function initTheme() {
 }
 
 function bindEvents() {
-  // Abrir editor em diferentes abas
-  ["open-editor-top", "open-editor-header", "open-editor-about", "open-editor-footer"].forEach((id) => {
-    const btn = document.getElementById(id);
-    if (btn) btn.addEventListener("click", () => openEditor("write"));
+  // Gatilhos ocultos do proprietário (5 cliques no logo do topo ou rodapé + Ctrl+Shift+E)
+  setupSecretTrigger(els.brandLogo);
+  setupSecretTrigger(els.footerSecretBrand);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "e") {
+      e.preventDefault();
+      requestOwnerAccess("write");
+    }
   });
-  document.getElementById("open-image-bank-btn").addEventListener("click", () => openEditor("images"));
-  document.getElementById("open-instagram-cfg-btn").addEventListener("click", () => openEditor("integrations"));
-  document.getElementById("open-analytics-about").addEventListener("click", () => openEditor("integrations"));
+
+  // Login por e-mail exclusivo do proprietário
+  els.ownerLoginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(els.ownerLoginForm);
+    const ok = await verifyOwnerCredentials(fd.get("email"), fd.get("passcode"));
+    if (!ok) {
+      els.ownerLoginError.hidden = false;
+      return;
+    }
+    state.ownerAuthenticated = true;
+    sessionStorage.setItem(SESSION_OWNER_KEY, "1");
+    els.ownerLoginModal.hidden = true;
+    updateOwnerBar();
+    openEditor("write");
+    showToast("✓ Acesso autorizado! Bem-vindo à Área do Editor.");
+  });
+
+  els.ownerOpenStudioBtn.addEventListener("click", () => openEditor("write"));
+  els.ownerLogoutBtn.addEventListener("click", () => {
+    state.ownerAuthenticated = false;
+    sessionStorage.removeItem(SESSION_OWNER_KEY);
+    els.editorModal.hidden = true;
+    updateOwnerBar();
+    showToast("Você saiu do Modo Proprietário.");
+  });
+
   document.getElementById("open-privacy-btn").addEventListener("click", () => (els.privacyModal.hidden = false));
 
-  // Abas do editor
   document.querySelectorAll(".studio-tab").forEach((tab) => {
     tab.addEventListener("click", () => switchStudioTab(tab.dataset.studioTab));
   });
@@ -615,6 +752,15 @@ function bindEvents() {
     const lbCard = e.target.closest("[data-open-lightbox]");
     if (lbCard) {
       openLightbox(lbCard.dataset.openLightbox);
+      return;
+    }
+
+    // Troca rápida de capa de publicação anterior
+    const quickCoverBtn = e.target.closest("[data-quick-cover]");
+    if (quickCoverBtn) {
+      state.quickCoverTargetPostId = quickCoverBtn.dataset.quickCover;
+      els.quickCoverFile.value = "";
+      els.quickCoverFile.click();
       return;
     }
 
@@ -643,7 +789,6 @@ function bindEvents() {
       return;
     }
 
-    // Botões de formatação fácil no texto
     const toolBtn = e.target.closest("[data-insert]");
     if (toolBtn) {
       const kind = toolBtn.dataset.insert;
@@ -660,14 +805,31 @@ function bindEvents() {
     }
   });
 
-  // Upload de capa direto no editor de artigo
+  // Substituição imediata da imagem de capa de uma publicação existente
+  els.quickCoverFile.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !state.quickCoverTargetPostId) return;
+    const post = state.posts.find((p) => p.id === state.quickCoverTargetPostId);
+    if (!post) return;
+    try {
+      const dataUrl = await readAndCompressImage(file);
+      saveCustomPost({ ...post, image: dataUrl });
+      refreshAllViews();
+      showToast("✓ Imagem de capa substituída com sucesso!");
+    } catch {
+      showToast("Não foi possível trocar a imagem.");
+    }
+    state.quickCoverTargetPostId = null;
+  });
+
+  // Upload de capa no formulário do artigo
   els.edCoverUpload.addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       const dataUrl = await readAndCompressImage(file);
       setSelectedCover(dataUrl, `Foto enviada: ${file.name}`);
-      showToast("Foto de capa carregada com sucesso!");
+      showToast("Foto de capa carregada!");
     } catch {
       showToast("Não foi possível carregar a imagem.");
     }
@@ -712,7 +874,7 @@ function bindEvents() {
         : new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }),
       featured: existing ? Boolean(existing.featured) : false,
       image: els.edImageValue.value || "assets/images/hero-offshore.jpg",
-      imageCaption: `Publicação técnica de Cleilson TST — ${catLabels[category] || ""}`,
+      imageCaption: `Publicação técnica de ${state.profile.name} TST — ${catLabels[category] || ""}`,
       summary: els.edSummary.value
         .split("\n")
         .map((s) => s.trim())
@@ -730,7 +892,52 @@ function bindEvents() {
 
   els.edCancelEdit.addEventListener("click", resetEditorForm);
 
-  // Upload no Banco de Imagens (clique ou arrastar e soltar)
+  // Upload Foto de Perfil do Cleilson
+  els.profAvatarUpload.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await readAndCompressImage(file, 600);
+      els.profAvatarPreview.src = dataUrl;
+      els.profAvatarValue.value = dataUrl;
+      showToast("Foto de perfil pronta! Clique em Salvar Perfil do Cleilson.");
+    } catch {
+      showToast("Não foi possível carregar a foto.");
+    }
+  });
+
+  // Salvar Perfil do Cleilson ("Sobre o Cleilson")
+  els.profileConfigForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const fd = new FormData(els.profileConfigForm);
+    saveProfile({
+      avatar: String(fd.get("avatar") || state.profile.avatar),
+      name: String(fd.get("name") || "Cleilson").trim(),
+      role: String(fd.get("role") || "").trim(),
+      aboutHeadline: String(fd.get("aboutHeadline") || "").trim(),
+      bio: String(fd.get("bio") || "").trim(),
+      history: String(fd.get("history") || "").trim(),
+      shortBio: String(fd.get("shortBio") || "").trim()
+    });
+    refreshAllViews();
+    showToast("✓ Dados, foto e histórico do Cleilson atualizados em todo o site!");
+  });
+
+  // Salvar E-mail Exclusivo e Senha do Proprietário
+  els.ownerSecurityForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(els.ownerSecurityForm);
+    const current = loadOwnerAuth();
+    const newEmail = String(fd.get("ownerEmail") || "").trim().toLowerCase();
+    const newPass = String(fd.get("newPasscode") || "").trim();
+    const passcodeHash = newPass ? await hashSecret(newPass) : current.passcodeHash;
+    saveOwnerAuth({ email: newEmail, passcodeHash });
+    document.getElementById("sec-pass").value = "";
+    updateOwnerBar();
+    showToast("✓ E-mail autorizado e chave de acesso atualizados!");
+  });
+
+  // Banco de Imagens
   const handleBankFile = async (file) => {
     if (!file || !file.type.startsWith("image/")) return;
     state.pendingBankImageDataUrl = await readAndCompressImage(file);
@@ -776,7 +983,7 @@ function bindEvents() {
     showToast("✓ Imagem adicionada ao Banco de Imagens!");
   });
 
-  // Salvar Instagram & Sincronizar
+  // Instagram & Google Analytics & AdSense
   els.instagramConfigForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const fd = new FormData(els.instagramConfigForm);
@@ -791,7 +998,6 @@ function bindEvents() {
 
   els.syncInstagramBtn.addEventListener("click", syncInstagramFeed);
 
-  // Salvar Analytics / Leitores Mensais Reais
   els.analyticsConfigForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const fd = new FormData(els.analyticsConfigForm);
@@ -800,19 +1006,23 @@ function bindEvents() {
       gaMeasurementId: String(fd.get("gaMeasurementId") || "").trim(),
       monthlyReaders: readers
     });
+    saveAdsenseConfig({
+      publisherId: String(fd.get("publisherId") || "").trim(),
+      enabled: true
+    });
     renderRealIndicators();
     showToast(
       readers >= SITE_CONFIG.minReadersToDisplay
-        ? "✓ Indicador de Leitores Mensais ativado no site!"
-        : "✓ Salvo! O indicador aparecerá automaticamente ao atingir 500 leitores reais."
+        ? "✓ Configurações Google e Leitores Mensais salvos!"
+        : "✓ Salvo! Leitores Mensais só aparecem ao atingir 500+ leitores reais."
     );
   });
 
-  // Lightbox: WhatsApp e Instagram
+  // Lightbox
   els.lbShareWa.addEventListener("click", () => {
     const item = state.activeLightboxItem;
     if (!item) return;
-    const text = `🦺 *${item.title}*\n${item.caption}\n${item.hashtag || ""}\n\nPortal Cleilson TST: ${window.location.href}`;
+    const text = `🦺 *${item.title}*\n${item.caption}\n${item.hashtag || ""}\n\nPortal ${state.profile.name} TST: ${window.location.href}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
   });
 
@@ -822,7 +1032,7 @@ function bindEvents() {
     const text = `${item.title}\n\n${item.caption}\n\n${item.hashtag || "#SegurancaDoTrabalho #TST"}`;
     try {
       await navigator.clipboard.writeText(text);
-      showToast("Legenda + hashtags copiadas! Pronto para postar no Instagram.");
+      showToast("Legenda + hashtags copiadas!");
     } catch {
       showToast("Não foi possível copiar automaticamente.");
     }
@@ -879,6 +1089,12 @@ function init() {
   initTheme();
   refreshAllViews();
   bindEvents();
+
+  // Permite abrir o login do proprietário via link secreto ?acesso=editor
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("acesso") === "editor") {
+    requestOwnerAccess("write");
+  }
 }
 
 init();
